@@ -45,3 +45,16 @@ búsqueda y recomendación.
 - **Servicio de inferencia** — Python, FastAPI
 - **Web** — React, Vite
 - **Infraestructura** — Docker, PostgreSQL, Oracle Cloud Infrastructure (OCI)
+
+## Estructura
+
+| Carpeta | Qué hay |
+|---|---|
+| [api/](api/) | API REST (Java · Spring Boot): valida, orquesta y persiste; expone los endpoints públicos. |
+| [inference/](inference/) | Servicio de inferencia (Python · FastAPI): embeddings, clasificación y similitud. |
+| [web/](web/) | Interfaz web (React · Vite): ingesta, búsqueda y mapa del corpus. |
+| [data/](data/) | Construcción del corpus: extracción, limpieza y etiquetado. |
+| [notebook/](notebook/) | EDA, entrenamiento y evaluación; serializa el modelo (Colab). |
+| [docs/](docs/) | Especificación del proyecto, brief del reto y guías de infraestructura. |
+
+Cada carpeta tiene su propio `README.md` con el detalle de qué consume y qué expone.
