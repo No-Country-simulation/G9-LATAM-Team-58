@@ -44,7 +44,8 @@ búsqueda y recomendación.
 - **API** — Java, Spring Boot
 - **Servicio de inferencia** — Python, FastAPI
 - **Web** — React, Vite
-- **Infraestructura** — Docker, PostgreSQL, Oracle Cloud Infrastructure (OCI)
+- **Infraestructura** — Docker, Oracle Autonomous Database (AI Vector Search),
+  Oracle Cloud Infrastructure (OCI)
 
 ## Estructura
 

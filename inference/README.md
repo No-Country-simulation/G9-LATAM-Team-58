@@ -1,7 +1,8 @@
 # inference/
 
-Servicio de inferencia **sin estado**: embeddings, clasificación y similitud.
-**No** toca la base de datos (salvo el índice de similitud en memoria).
+Servicio de inferencia **sin estado**: embeddings y clasificación. **No** toca la
+base de datos ni guarda el índice del corpus en memoria — el ranking por similitud
+lo resuelve la Autonomous Database con `VECTOR_DISTANCE`, orquestado por `api/`.
 
 ## Consume
 
@@ -21,12 +22,13 @@ Servicio de inferencia **sin estado**: embeddings, clasificación y similitud.
 - **Contrato interno:** este servicio lo llama **solo la API** (`api/`), nunca la
   web. Por eso **todo va en inglés** (paths, keys, valores) salvo los valores de
   categoría (`"Backend"`, `"Datos e IA"`…), que son las etiquetas del modelo.
-- **Sin estado:** no toca la base de datos; lo único que guarda es el índice de
-  similitud **en memoria**.
-- **Prefijos E5 (importante):** el caller envía **texto plano**. El servicio
-  aplica internamente el prefijo `"query: "` a las consultas; los documentos del
-  corpus se indexaron con `"passage: "`. No mezclar los prefijos degrada la
-  búsqueda en silencio.
+- **Sin estado:** no toca la base de datos y no mantiene ningún índice. Lo único
+  que carga es el artefacto (modelo + tokenizer). Por eso cabe en la VM.
+- **Prefijos E5 (importante):** el caller envía **texto plano** y el servicio aplica
+  el prefijo. Pero **el caller decide cuál**: `POST /predict` usa `"passage: "`
+  siempre (es el camino de indexación) y `POST /embed` exige el campo `type`, sin
+  valor por defecto. Mezclarlos degrada la búsqueda **en silencio, sin lanzar
+  error** — por eso no hay default que adivinar.
 - **Errores (FastAPI):** validación de entrada → `422` con `{ "detail": [...] }`;
   errores controlados → `{ "detail": "mensaje" }` con el código HTTP
   correspondiente.
@@ -48,14 +50,18 @@ Servicio de inferencia **sin estado**: embeddings, clasificación y similitud.
 |---|---|---|
 | `text` | string | sí |
 
-**Devuelve** `200 OK`:
+**Devuelve** `200 OK` — todo lo que la API necesita para persistir el contenido:
 
 ```json
 {
   "category": "Backend",
   "probability": 0.89,
   "keywords": ["java", "spring", "rest"],
-  "explanation": ["spring", "rest", "endpoint"]
+  "explanation": ["spring", "rest", "endpoint"],
+  "embedding": [0.021, -0.118, "…384 floats…"],
+  "cluster_id": 3,
+  "x": 4.21,
+  "y": -1.07
 }
 ```
 
@@ -65,71 +71,46 @@ Servicio de inferencia **sin estado**: embeddings, clasificación y similitud.
 | `probability` | float 0–1 | confianza de la clase elegida |
 | `keywords` | string[] | términos clave extraídos |
 | `explanation` | string[] | términos con más peso en la decisión (explicabilidad) |
+| `embedding` | float32[384] | vector L2-normalizado, listo para la columna `VECTOR` |
+| `cluster_id` | int | cluster de KMeans (en el `.joblib` la clave es `cluster`) |
+| `x`, `y` | float | coordenadas UMAP, para el mapa del corpus |
+
+> **Por qué devuelve el embedding.** `cluster_id`, `x` e `y` salen de `kmeans` y
+> `umap_reducer`, que viven dentro del artefacto — la API Java no puede calcularlos.
+> Si tuviera que pedir la clasificación aquí y el vector a `POST /embed`, pagaría
+> **dos pasadas del encoder sobre el mismo texto**, que es la parte cara. Este
+> endpoint resuelve el camino de indexación completo en una sola llamada.
+
+Este endpoint aplica el prefijo `"passage: "`, siempre.
 
 ---
 
-## `POST /similar` — contenidos más parecidos
+## `POST /embed` — vectorizar una consulta
+
+Solo el vector. Lo usa `GET /search?mode=semantic` de la API, que después lanza el
+`VECTOR_DISTANCE` contra la base.
 
 **Recibe** (body):
 
 ```json
-{ "text": "APIs REST con Java", "k": 5 }
+{ "text": "cómo validar entradas en Spring", "type": "query" }
 ```
 
 | Campo | Tipo | Default | Qué hace |
 |---|---|---|---|
-| `text` | string | — (obligatorio) | consulta |
-| `k` | int | 5 | cuántos devolver |
-
-**Devuelve** `200 OK` — items del corpus ordenados por similitud (coseno =
-producto punto sobre embeddings normalizados):
-
-```json
-{
-  "related": [
-    { "id": "devto-4821", "title": "Introducción a Spring Boot", "similarity": 0.83 },
-    { "id": "medium-1187", "title": "REST con Node y Express",    "similarity": 0.79 }
-  ]
-}
-```
-
-> Los `id` son los del `corpus_metadata` del modelo, no los `id` de la base de
-> datos de la API. La API hace el mapeo cuando corresponde.
-
----
-
-## `POST /index` — añadir al índice en memoria
-
-Hace crecer el índice de similitud en caliente, sin reentrenar.
-
-**Recibe** (body):
-
-```json
-{
-  "id": "142",
-  "title": "Introducción a Spring Boot",
-  "category": "Backend",
-  "url": "https://...",
-  "text": "En este contenido..."
-}
-```
-
-| Campo | Tipo | Obligatorio |
-|---|---|---|
-| `id` | string | sí |
-| `title` | string | sí |
-| `category` | string | sí |
-| `url` | string | no |
-| `text` | string | sí |
+| `text` | string | — (obligatorio) | texto a vectorizar |
+| `type` | `"query"` \| `"passage"` | — (**obligatorio**) | qué prefijo E5 aplicar |
 
 **Devuelve** `200 OK`:
 
 ```json
-{ "indexed": true, "corpus_size": 1041 }
+{ "embedding": [0.021, -0.118, "…384 floats…"] }
 ```
 
-> El índice vive en memoria: se pierde al reiniciar el servicio. La fuente de
-> verdad persistente es la base de datos de la API + el corpus del bucket.
+> **`type` no tiene valor por defecto a propósito.** Si falta, `422`. E5 exige
+> `"query: "` al consultar y `"passage: "` al indexar; mezclarlos no lanza ninguna
+> excepción, solo devuelve resultados peores que nadie nota hasta la demo. Un
+> default sería adivinar, y adivinar mal es invisible.
 
 ---
 
@@ -167,26 +148,24 @@ Hace crecer el índice de similitud en caliente, sin reentrenar.
 
 ---
 
-## `GET /projection` — puntos 2D del corpus (para el mapa)
+## Lo que este servicio ya NO hace
 
-Sirve la proyección UMAP del artefacto (`projection` + `corpus_metadata`). Es la
-fuente del `GET /map` de la API.
+Tres endpoints desaparecieron al mover el índice a la Autonomous Database. Si vienes
+del notebook o de una versión anterior de este documento, búscalos aquí:
 
-**Recibe:** nada.
+| Antes | Ahora |
+|---|---|
+| `POST /similar` | La API consulta `VECTOR_DISTANCE` en la base. Ver `api/README.md` |
+| `POST /index` | La API persiste lo que devuelve `POST /predict` |
+| `GET /projection` | Las coordenadas `x`/`y` están en la tabla `contents` |
 
-**Devuelve** `200 OK`:
+`index_new_content()` del notebook hacía **tres cosas a la vez** —vectorizar,
+asignar cluster/coordenadas y opcionalmente reentrenar—. En producción esas tres
+cosas tienen tres dueños distintos: la función no se eliminó, se descompuso. El
+`partial_fit` quedaría en un `POST /learn` que está **diseñado pero no
+implementado** (`docs/TECHMIND.md` §3).
 
-```json
-{
-  "points": [
-    { "id": "devto-4821", "title": "Introducción a Spring Boot", "category": "Backend", "x": 1.24, "y": -3.07 },
-    { "id": "medium-1187", "title": "REST con Node y Express",    "category": "Backend", "x": 1.51, "y": -2.88 }
-  ]
-}
-```
-
-> Refleja el corpus **entrenado** (la `projection` del `.joblib`). Contenidos
-> añadidos en vivo con `POST /index` no tienen `(x, y)` hasta re-proyectar en el
-> notebook.
-
-**Errores:** `503` si el modelo aún no está cargado.
+Efecto secundario bueno: los contenidos añadidos en vivo **sí aparecen en el mapa**.
+Antes la proyección salía congelada del `.joblib` y había que re-proyectar en el
+notebook; ahora `umap_reducer.transform()` corre dentro de `POST /predict` y sus
+coordenadas se persisten con el resto.

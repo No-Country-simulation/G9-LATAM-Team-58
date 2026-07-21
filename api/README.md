@@ -5,8 +5,9 @@ modelos ni hace matemáticas.
 
 ## Consume
 
-- `inference/` (HTTP interno, JSON) — predicción y similitud.
-- PostgreSQL — persistencia de los contenidos.
+- `inference/` (HTTP interno, JSON) — clasificación y embeddings.
+- Oracle Autonomous Database (JDBC) — persistencia de los contenidos y
+  **búsqueda vectorial** (`VECTOR_DISTANCE`). Es la única pieza que la toca.
 
 ## Fronteras
 
@@ -72,14 +73,36 @@ resuelven **solo con la base de datos**.
 
 | Ruta de la API | Llama a inference |
 |---|---|
-| `POST /content` | `POST /predict` (+ `POST /similar` para relacionados, `POST /index` al persistir) |
-| `GET /contents/{id}/related` | `POST /similar` |
-| `GET /search?mode=semantic` | `POST /similar` |
-| `GET /map` | `GET /projection` |
+| `POST /content` | `POST /predict` — **una sola llamada** |
+| `GET /search?mode=semantic` | `POST /embed` con `type: "query"` |
 | `GET /model` | `GET /model/info` |
 
 **Solo API + DB** (no pasan por inference): `GET /contents`,
-`GET /contents?category=`, `GET /search?mode=keyword`, `GET /stats`.
+`GET /contents?category=`, `GET /contents/{id}/related`, `GET /search?mode=keyword`,
+`GET /map`, `GET /stats`.
+
+Dos cosas que sorprenden a primera vista:
+
+- **`POST /content` hace una sola llamada.** `POST /predict` devuelve la categoría
+  *y* el `embedding`, el `cluster_id` y las coordenadas `x`/`y`. La API persiste todo
+  eso de una vez. Llamar además a un endpoint de embeddings pagaría el encoder dos
+  veces sobre el mismo texto, que es la parte cara.
+- **`related` no pasa por inference.** El contenido base ya tiene su vector en la
+  base, así que el ranking es una consulta:
+
+  ```sql
+  SELECT id, title, category,
+         1 - VECTOR_DISTANCE(embedding, :qv, COSINE) AS similarity
+  FROM contents
+  WHERE id <> :base_id
+  ORDER BY VECTOR_DISTANCE(embedding, :qv, COSINE)
+  FETCH FIRST :n ROWS ONLY
+  ```
+
+> **`type` en `POST /embed` es obligatorio y no tiene default.** El modelo E5 exige
+> el prefijo `"query: "` al consultar y `"passage: "` al indexar; mezclarlos degrada
+> la búsqueda **en silencio, sin lanzar ningún error**. Manda siempre `"query"` desde
+> `GET /search`.
 
 ---
 
@@ -105,16 +128,21 @@ Recibe un texto, lo clasifica, lo persiste y devuelve el resultado enriquecido.
 
 ```json
 {
-  "id": 142,
+  "id": "usr-9f2c1e04",
   "category": "Backend",
   "probability": 0.89,
   "keywords": ["Java", "Spring Boot", "API REST"],
   "related": [
-    { "id": 87, "title": "Validación con Bean Validation", "category": "Backend", "similarity": 0.76 }
+    { "id": "devto-2015", "title": "Validación con Bean Validation", "category": "Backend", "similarity": 0.76 }
   ],
   "explanation": ["spring", "rest", "endpoint"]
 }
 ```
+
+> **Los `id` son strings.** Un contenido del corpus conserva el suyo
+> (`devto-4821`); uno que sube un usuario recibe `usr-{UUID}` acuñado por la API.
+> Es la misma clave del `.jsonl` y de `corpus_metadata`, así que no hay tabla de
+> mapeo ni dos espacios de identificadores que reconciliar.
 
 **Errores:** `400 VALIDATION_ERROR` si falta `title` o `body`.
 
@@ -137,8 +165,8 @@ Lista los contenidos ya indexados. Acepta un filtro opcional por categoría.
 
 ```json
 [
-  { "id": 142, "title": "Introducción a Spring Boot", "category": "Backend", "source": "dev.to", "probability": 0.89, "addedAt": "2026-07-14T09:12:00Z" },
-  { "id": 143, "title": "Componentes en React", "category": "Frontend", "source": "medium", "probability": 0.81, "addedAt": "2026-07-15T16:40:00Z" }
+  { "id": "devto-4821", "title": "Introducción a Spring Boot", "category": "Backend", "source": "dev.to", "probability": 0.89, "addedAt": "2026-07-14T09:12:00Z" },
+  { "id": "medium-1187", "title": "Componentes en React", "category": "Frontend", "source": "medium", "probability": 0.81, "addedAt": "2026-07-15T16:40:00Z" }
 ]
 ```
 
@@ -164,13 +192,13 @@ GET /contents?page=2&size=50   -> paginado
 
 | Param | Tipo | Qué es |
 |---|---|---|
-| `id` | int | id del contenido |
+| `id` | string | id del contenido (`devto-4821`, `usr-9f2c1e04`…) |
 
 **Devuelve** `200 OK` — el contenido completo:
 
 ```json
 {
-  "id": 142,
+  "id": "devto-4821",
   "title": "Introducción a Spring Boot",
   "body": "En este contenido...",
   "category": "Backend",
@@ -193,7 +221,7 @@ Contenidos semánticamente parecidos al indicado.
 
 | Param | Ubicación | Tipo | Default | Qué hace |
 |---|---|---|---|---|
-| `id` | path | int | — | contenido base |
+| `id` | path | string | — | contenido base |
 | `limit` | query | int | 5 | cuántos devolver |
 
 **Devuelve** `200 OK`:
@@ -201,8 +229,8 @@ Contenidos semánticamente parecidos al indicado.
 ```json
 {
   "related": [
-    { "id": 87, "title": "Validación con Bean Validation", "category": "Backend", "similarity": 0.76 },
-    { "id": 91, "title": "Manejo de errores en REST",       "category": "Backend", "similarity": 0.71 }
+    { "id": "devto-2015", "title": "Validación con Bean Validation", "category": "Backend", "similarity": 0.76 },
+    { "id": "devto-3390", "title": "Manejo de errores en REST",      "category": "Backend", "similarity": 0.71 }
   ]
 }
 ```
@@ -234,8 +262,8 @@ Dos modos: **semantic** (embeddings, vía inferencia) y **keyword** (léxica sob
   "total": 24,
   "elapsedMs": 38,
   "results": [
-    { "id": 142, "title": "Introducción a Spring Boot", "category": "Backend", "similarity": 0.83 },
-    { "id": 150, "title": "APIs REST con Node",          "category": "Backend", "similarity": 0.79 }
+    { "id": "devto-4821", "title": "Introducción a Spring Boot", "category": "Backend", "similarity": 0.83 },
+    { "id": "medium-0042", "title": "APIs REST con Node",        "category": "Backend", "similarity": 0.79 }
   ]
 }
 ```
@@ -259,14 +287,15 @@ Coordenadas 2D (UMAP) de cada documento, para la nube de puntos.
 
 ```json
 [
-  { "id": 142, "title": "Introducción a Spring Boot", "category": "Backend",  "x": 1.24, "y": -3.07 },
-  { "id": 143, "title": "Componentes en React",       "category": "Frontend", "x": -2.10, "y": 0.88 }
+  { "id": "devto-4821", "title": "Introducción a Spring Boot", "category": "Backend",  "x": 1.24, "y": -3.07 },
+  { "id": "medium-1187", "title": "Componentes en React",      "category": "Frontend", "x": -2.10, "y": 0.88 }
 ]
 ```
 
-> La API obtiene los puntos de inference (`GET /projection`); **no** salen de la
-> DB. Reflejan el corpus **entrenado**: los contenidos añadidos en vivo con
-> `POST /content` no aparecen hasta re-proyectar en el notebook.
+> Los puntos salen de las columnas `x`/`y` de la base — no pasan por inference. Los
+> contenidos añadidos en vivo con `POST /content` **sí aparecen** en el mapa: sus
+> coordenadas las calcula `umap_reducer.transform()` dentro de `POST /predict` y se
+> persisten con el resto.
 
 ---
 
@@ -333,7 +362,7 @@ Ingiere varios contenidos desde un CSV.
 {
   "processed": 231,
   "failed": 3,
-  "ids": [200, 201, 202, "..."],
+  "ids": ["usr-3a71bd90", "usr-c04e1f22", "usr-88b5a7de", "..."],
   "errors": [
     { "row": 57, "reason": "El campo 'body' no puede estar vacío" }
   ],

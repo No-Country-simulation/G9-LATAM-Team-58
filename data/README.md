@@ -21,3 +21,7 @@ Construcción del corpus: extracción, limpieza y etiquetado. No se despliega.
 
 - Categoría: una de las 8 (ver `docs/TECHMIND.md`). Rúbrica de etiquetado escrita
   antes de etiquetar. JSONL, no CSV.
+- **Los siete campos son obligatorios, incluidos `source` y `language`.** No son
+  decorativos: son columnas de la tabla `contents` en la Autonomous Database.
+  Emitirlos desde la primera extracción cuesta cero; añadirlos después obliga a
+  **re-extraer el corpus entero**, porque no se pueden reconstruir a posteriori.
