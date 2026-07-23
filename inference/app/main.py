@@ -1,5 +1,13 @@
-from fastapi import FastAPI, HTTPException
-from app.schemas import (PredictRequest, EmbedRequest, PredictResponse, EmbedResponse, HealthResponse, ModelMetrics, ModelInfoResponse)
+from fastapi import FastAPI
+
+from app.schemas import (
+    EmbedRequest,
+    EmbedResponse,
+    HealthResponse,
+    ModelInfoResponse,
+    PredictRequest,
+    PredictResponse,
+)
 
 app = FastAPI(title = "TechMind Inference Service")
 

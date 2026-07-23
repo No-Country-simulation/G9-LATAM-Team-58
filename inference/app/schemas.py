@@ -1,5 +1,6 @@
+from typing import Literal
+
 from pydantic import BaseModel
-from typing import List, Literal
 
 # Inputs - Request
 
@@ -15,16 +16,16 @@ class EmbedRequest(BaseModel):
 class PredictResponse(BaseModel):
     category: str
     probability: float
-    keywords: List[str]
-    explanation: List[str]
-    embedding: List[float]
+    keywords: list[str]
+    explanation: list[str]
+    embedding: list[float]
     cluster_id: int
     x: float
     y: float
 
 
 class EmbedResponse(BaseModel):
-    embedding: List[float]
+    embedding: list[float]
 
 
 class HealthResponse(BaseModel):
@@ -42,5 +43,5 @@ class ModelInfoResponse(BaseModel):
     version: str
     embedding_model: str
     dim: int
-    categories: List[str]
+    categories: list[str]
     metrics: ModelMetrics
