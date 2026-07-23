@@ -1,0 +1,70 @@
+# TechMind runtime: api + inference on the Ampere A1 VM.
+#
+# There is NO database container -- persistence is the managed Autonomous
+# Database (docs/OCI-setup.md section 6). The web front is served by nginx here
+# on the VM, not a bucket: OCI Object Storage can't host a SPA (section 8).
+
+services:
+  inference:
+    build:
+      context: ./inference
+    image: techmind-inference:local
+    restart: unless-stopped
+    # Deliberately NOT published to the host. Only the api calls it, over the
+    # internal compose network. Section 3 of the runbook keeps 8000 closed.
+    expose:
+      - "8000"
+    environment:
+      # Filled in once the service downloads the artifact at startup.
+      OCI_NAMESPACE: ${OCI_NAMESPACE:-}
+      MODEL_BUCKET: ${MODEL_BUCKET:-techmind-data}
+    networks: [techmind]
+
+  api:
+    build:
+      context: ./api
+    image: techmind-api:local
+    restart: unless-stopped
+    # Kept published for now so teammates can hit the API directly while the
+    # front is being built. Once everything goes through nginx (/api proxy),
+    # this can drop to `expose` and 8080 can close in the Security List (section 3).
+    ports:
+      - "8080:8080"
+    environment:
+      # Relaxed binding: SPRING_DATASOURCE_URL -> spring.datasource.url, and
+      # INFERENCE_BASE_URL -> inference.base-url.
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      INFERENCE_BASE_URL: http://inference:8000
+      TNS_ADMIN: /app/wallet
+    volumes:
+      # Unzipped Instance Wallet. Lives on the VM, never in the repo.
+      - ./wallet:/app/wallet:ro
+    depends_on:
+      inference:
+        condition: service_healthy
+    networks: [techmind]
+
+  # nginx serves the React build and reverse-proxies /api to the api container.
+  # OCI Object Storage cannot host a SPA (no index fallback, 404 on refresh), so
+  # the front lives here instead of a bucket -- see docs/OCI-setup.md section 8.
+  #
+  # Behind `profiles: [web]` because web/ is still just a README (no package.json
+  # to build). It stays out of a plain `docker compose build/up`; bring it in
+  # with `docker compose --profile web ...`. Drop this profile once web/ is real.
+  web:
+    build:
+      context: ./web
+    image: techmind-web:local
+    restart: unless-stopped
+    profiles: [web]
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks: [techmind]
+
+networks:
+  techmind:
+    driver: bridge

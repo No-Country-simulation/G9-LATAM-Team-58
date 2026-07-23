@@ -1,0 +1,42 @@
+name: Deploy
+
+# Builds ON the VM over SSH, not on the runner: the VM is Ampere A1 (arm64) and
+# GitHub runners are x86. Cross-building with buildx + QEMU works but takes
+# 20-40 min once the transformer is baked in. See docs/OCI-setup.md section 9.
+#
+# A single job: api, inference AND the web front (nginx) all build on the VM via
+# docker compose. The front is NOT uploaded to a bucket -- OCI Object Storage
+# can't host a SPA, so nginx serves it from the VM (section 8). That's why there
+# are no OCI_CLI_* secrets here anymore.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vm
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: api + inference + web -> Ampere VM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build and restart on the VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd ~/techmind
+            git fetch origin main
+            git reset --hard origin/main
+            # --profile web is a no-op until web/ has a real package.json; drop
+            # the profile guard in docker-compose.yml once the front lands.
+            docker compose --profile web build
+            docker compose --profile web up -d --remove-orphans
+            docker image prune -f
+            docker compose ps

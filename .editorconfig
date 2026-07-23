@@ -1,0 +1,28 @@
+# Editor configuration, see https://editorconfig.org
+root = true
+
+# Defaults for every file: spaces, UTF-8, trimmed, final newline.
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Python and Java: 4 spaces (PEP 8 / Java convention).
+[*.{py,java}]
+indent_size = 4
+
+# Web / config files: 2 spaces.
+[*.{js,jsx,ts,tsx,json,css,scss,html,yml,yaml}]
+indent_style = tab
+indent_size = 2
+
+[*.ts]
+quote_type = single
+
+# Markdown: keep trailing whitespace (two spaces = hard line break) and no wrap.
+[*.md]
+max_line_length = off
+trim_trailing_whitespace = false

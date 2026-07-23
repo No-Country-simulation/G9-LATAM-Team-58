@@ -1,0 +1,48 @@
+# === Hard rules: never commit models, datasets or secrets ===
+*.joblib
+*.jsonl
+*.csv
+.env
+.env.*
+!.env.example
+
+# Oracle wallet — mTLS credentials for the Autonomous Database. Lives on the VM.
+wallet/
+*_wallet.zip
+
+# Local-only compose override (publishes inference:8000 for dev). Never on the VM.
+docker-compose.override.yml
+
+# Data buckets / build outputs (local mirrors). The real corpus and the model
+# live on the OCI bucket — never commit them.
+data/raw/
+data/processed/
+models/
+
+# === Python ===
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# === Java / Maven ===
+api/target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+
+# === Node / web ===
+node_modules/
+web/dist/
+*.log
+.pnpm-store/
+
+# === IDE / OS ===
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

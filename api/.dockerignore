@@ -1,0 +1,7 @@
+target/
+.idea/
+*.iml
+.env
+wallet/
+*.zip
+README.md
