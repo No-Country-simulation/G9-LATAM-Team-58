@@ -4,6 +4,14 @@
 *.csv
 .env
 .env.*
+!.env.example
+
+# Oracle wallet — mTLS credentials for the Autonomous Database. Lives on the VM.
+wallet/
+*_wallet.zip
+
+# Local-only compose override (publishes inference:8000 for dev). Never on the VM.
+docker-compose.override.yml
 
 # Data buckets / build outputs (local mirrors). The real corpus and the model
 # live on the OCI bucket — never commit them.
