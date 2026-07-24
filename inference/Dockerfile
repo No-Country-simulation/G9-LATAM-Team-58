@@ -1,5 +1,5 @@
-# Inference service. Built natively on the ARM VM (linux/arm64) -- see
-# docs/OCI-setup.md section 4. An x86 image fails there with `exec format error`.
+# Inference service. Built natively on the ARM VM (linux/arm64); an x86 image
+# fails there with `exec format error`.
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -11,8 +11,8 @@ ENV PYTHONUNBUFFERED=1 \
 COPY requirements.txt .
 
 # On aarch64 there are no CUDA wheels, so the default index already resolves to
-# the CPU build of torch. The `--index-url .../whl/cpu` rule from CLAUDE.md
-# matters when building on x86 (local dev, GitHub runners), not here.
+# the CPU build of torch. The `--index-url .../whl/cpu` rule for torch matters
+# when building on x86 (local dev, GitHub runners), not here.
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ---------------------------------------------------------------------------
@@ -24,8 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 #       SentenceTransformer('intfloat/multilingual-e5-small')"
 #
 # model.joblib itself is downloaded at startup from the techmind-data bucket
-# via Instance Principal (docs/OCI-setup.md section 5). It is never baked in and
-# never committed.
+# via Instance Principal. It is never baked in and never committed.
 # ---------------------------------------------------------------------------
 
 COPY app ./app

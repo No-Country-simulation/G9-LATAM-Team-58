@@ -24,7 +24,7 @@ USER spring
 
 COPY --from=build --chown=spring:spring /build/target/*.jar app.jar
 
-# Oracle wallet is mounted at runtime, never baked in (docs/OCI-setup.md section 6).
+# Oracle wallet is mounted at runtime, never baked in.
 ENV TNS_ADMIN=/app/wallet
 
 EXPOSE 8080

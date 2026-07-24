@@ -2,7 +2,7 @@ name: Deploy
 
 # Builds ON the VM over SSH, not on the runner: the VM is Ampere A1 (arm64) and
 # GitHub runners are x86. Cross-building with buildx + QEMU works but takes
-# 20-40 min once the transformer is baked in. See docs/OCI-setup.md section 9.
+# 20-40 min once the transformer is baked in.
 #
 # A single job: api + inference build on the VM via docker compose. The web front
 # (nginx) sits behind `profiles: [web]` in docker-compose.yml and is NOT built
@@ -10,7 +10,7 @@ name: Deploy
 # `--profile web` to the build/up commands below (or drop the profile in compose).
 #
 # The front is NOT uploaded to a bucket -- OCI Object Storage can't host a SPA,
-# so nginx will serve it from the VM (section 8). No OCI_CLI_* secrets needed.
+# so nginx will serve it from the VM. No OCI_CLI_* secrets needed.
 on:
   push:
     branches: [main]
