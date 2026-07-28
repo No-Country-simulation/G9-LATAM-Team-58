@@ -15,4 +15,4 @@ def download_oci_model():
         
         with open(file_name, "wb") as f:
             for chunk in response.data.raw.stream(1024 * 1024, decode_content = False):
-                f.write(chunk)
+                f.writelines(chunk)
