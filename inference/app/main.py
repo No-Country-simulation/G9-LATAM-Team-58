@@ -1,5 +1,10 @@
-from fastapi import FastAPI
-
+import os
+import oci
+import oracledb
+import joblib
+from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from app.oci_client import download_oci_model
 from app.schemas import (
     EmbedRequest,
     EmbedResponse,
@@ -9,11 +14,38 @@ from app.schemas import (
     PredictResponse,
 )
 
-app = FastAPI(title = "TechMind Inference Service")
-
 APP_STATE = {
-    "model_loaded": True
+    "model_loaded": False,
+    "meta": None,
+    "kmeans": None,
+    "umap": None
 }
+
+@asynccontextmanager
+# Initialize joblib when service is up in an async way
+async def lifespan(app: FastAPI):
+
+    download_oci_model()
+
+    # Mock from OCI Object Storage
+    model_path = "model.joblib"
+
+    if os.path.exists(model_path):
+        # Upload serialized dic
+        artifact = joblib.load(model_path)
+
+        APP_STATE["metadata"] = artifact.get("metadata")
+        APP_STATE["kmeans"] = artifact.get("kmeans")
+        APP_STATE["umap"] = artifact.get("umap")
+        APP_STATE["model_loaded"] = True
+
+        yield
+
+        APP_STATE.clear()
+
+
+app = FastAPI(title = "TechMind Inference Service", lifespan = lifespan)
+
 
 @app.get("/health", response_model = HealthResponse)
 async def health_check():
@@ -27,32 +59,36 @@ async def health_check():
 @app.get("/model/info", response_model = ModelInfoResponse)
 async def get_model_info():
 
-    return{
-        "version": "v1",
-        "embedding_model": "intfloat/multilingual-e5-small",
-        "dim": 384,
-        "categories": ["Backend", "Frontend", "Móvil", "Datos e IA", "DevOps y Cloud", "Bases de datos", "Seguridad", "Fundamentos"],
-        "metrics": { 
-            "embedding_macro_f1_es": 0.0, 
-            "tfidf_macro_f1_es": 0.0 
-        }
-    }
+    if not APP_STATE["model_loaded"]:
+        raise HTTPException(status_code = 503, detail = "Model Not Found")
+
+    return APP_STATE["meta"]
+
 
 @app.post("/predict", response_model = PredictResponse)
 async def predict(request: PredictRequest):
 
-    # Embeddings mock - 384 dim
-    embedding_mock = [0.021, -0.118] + [0.0] * 382
+    # Embeddings mock
+    vector = [[0.021, -0.118, 0.0]]
+
+    if APP_STATE["model_loaded"]:
+        cluster = int(APP_STATE["kmeans"].predict(vector[0]))
+        proyeccion = APP_STATE["umap"].transform(vector)[0]
+        x, y = float(proyeccion[0]), float(proyeccion[1])
+    else:
+        cluster = 0 
+        x = 0.0
+        y = 0.0
 
     return {
         "category": "Backend",
         "probability": 0.89,
         "keywords": ["java", "spring", "rest"],
         "explanation": ["spring", "rest", "endpoint"],
-        "embedding": embedding_mock,
-        "cluster_id": 3,
-        "x": 4.21,
-        "y": -1.07
+        "embedding": vector[0],
+        "cluster_id": cluster,
+        "x": x,
+        "y": y
     }
 
 @app.post("/embed", response_model = EmbedResponse)
