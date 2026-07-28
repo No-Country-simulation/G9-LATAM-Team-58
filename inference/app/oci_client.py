@@ -1,10 +1,11 @@
-import oci
 import os
+
+import oci
 
 def download_oci_model():
     file_name = "model.joblib"
-    bucket_name = "techmind" 
-    objet_path = "models/model.joblib" 
+    bucket_name = "techmind-data" 
+    objet_path = "models/v1/model.joblib" 
     
     if not os.path.exists(file_name):
         print("Downloading model from OCI")

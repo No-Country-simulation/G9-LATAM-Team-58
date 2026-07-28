@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 import joblib
 from fastapi import FastAPI, HTTPException
+
 from app.oci_client import download_oci_model
 from app.schemas import (
     EmbedRequest,
