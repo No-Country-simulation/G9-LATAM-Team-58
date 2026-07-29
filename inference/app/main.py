@@ -3,8 +3,9 @@ from contextlib import asynccontextmanager
 
 import joblib
 from fastapi import FastAPI, HTTPException
+from sentence_transformers import SentenceTransformer
 
-from app.oci_client import download_oci_model
+from app.oci_client import load_model
 from app.schemas import (
     EmbedRequest,
     EmbedResponse,
@@ -25,15 +26,16 @@ APP_STATE = {
 # Initialize joblib when service is up in an async way
 async def lifespan(app: FastAPI):
 
-    download_oci_model()
+    # serialized dic (model.joblib)
+    model = load_model()
+    print(f"Model path: {model}")
 
-    # Mock from OCI Object Storage
-    model_path = "model.joblib"
+    if os.path.exists(model):
 
-    if os.path.exists(model_path):
-        # Upload serialized dic
-        artifact = joblib.load(model_path)
+        artifact = joblib.load(model)
 
+        APP_STATE["model"] = model
+        APP_STATE["encoder"] = SentenceTransformer(model["meta"]["embedding_model"])
         APP_STATE["metadata"] = artifact.get("metadata")
         APP_STATE["kmeans"] = artifact.get("kmeans")
         APP_STATE["umap"] = artifact.get("umap")

@@ -3,4 +3,6 @@ uvicorn
 pydantic
 joblib
 scikit-learn
+umap-learn
 oci
+sentence-transformers
