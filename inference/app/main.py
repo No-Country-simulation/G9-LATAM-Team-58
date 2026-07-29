@@ -26,24 +26,18 @@ APP_STATE = {
 # Initialize joblib when service is up in an async way
 async def lifespan(app: FastAPI):
 
-    # serialized dic (model.joblib)
-    model = load_model()
-    print(f"Model path: {model}")
+    artifact = load_model()
 
-    if os.path.exists(model):
+    APP_STATE["model"] = artifact
+    APP_STATE["encoder"] = SentenceTransformer(artifact["meta"]["embedding_model"])
+    APP_STATE["metadata"] = artifact.get("metadata")
+    APP_STATE["kmeans"] = artifact.get("kmeans")
+    APP_STATE["umap"] = artifact.get("umap")
+    APP_STATE["model_loaded"] = True
 
-        artifact = joblib.load(model)
+    yield
 
-        APP_STATE["model"] = model
-        APP_STATE["encoder"] = SentenceTransformer(model["meta"]["embedding_model"])
-        APP_STATE["metadata"] = artifact.get("metadata")
-        APP_STATE["kmeans"] = artifact.get("kmeans")
-        APP_STATE["umap"] = artifact.get("umap")
-        APP_STATE["model_loaded"] = True
-
-        yield
-
-        APP_STATE.clear()
+    APP_STATE.clear()
 
 
 app = FastAPI(title = "TechMind Inference Service", lifespan = lifespan)
@@ -51,10 +45,11 @@ app = FastAPI(title = "TechMind Inference Service", lifespan = lifespan)
 
 @app.get("/health", response_model = HealthResponse)
 async def health_check():
+    charged_model = APP_STATE.get("model_loaded", False)
 
     return {
-        "status": "ok",
-        "model_loaded": True,
+        "status": "ok" if charged_model else "error",
+        "model_loaded": charged_model,
         "version": "v1"
     }
 
@@ -70,24 +65,25 @@ async def get_model_info():
 @app.post("/predict", response_model = PredictResponse)
 async def predict(request: PredictRequest):
 
-    # Embeddings mock
-    vector = [[0.021, -0.118, 0.0]]
-
     if APP_STATE["model_loaded"]:
-        cluster = int(APP_STATE["kmeans"].predict(vector[0]))
-        proyeccion = APP_STATE["umap"].transform(vector)[0]
-        x, y = float(proyeccion[0]), float(proyeccion[1])
+        model = APP_STATE["model"]
+        encoder = APP_STATE["encoder"]
+        vector = encoder.encode("passage: " + request.text, normalize_embeddings=True)
+        category = model["label_encoder"].inverse_transform(model["classifier"].predict([vector]))[0]
+        probability = model["classifier"].predict_proba([vector]).max()
+        keywords = _top_terms(model["keyword_vectorizer"], request.text)
+        cluster = int(model["kmeans"].predict([vector])[0])       
+        x, y = model["umap_reducer"].transform([vector])[0] 
     else:
         cluster = 0 
         x = 0.0
         y = 0.0
 
     return {
-        "category": "Backend",
-        "probability": 0.89,
-        "keywords": ["java", "spring", "rest"],
-        "explanation": ["spring", "rest", "endpoint"],
-        "embedding": vector[0],
+        "category": category,
+        "probability": probability,
+        "keywords": keywords,
+        "embedding": vector,
         "cluster_id": cluster,
         "x": x,
         "y": y
@@ -96,9 +92,28 @@ async def predict(request: PredictRequest):
 @app.post("/embed", response_model = EmbedResponse)
 async def embed(request: EmbedRequest):
 
-    # Embeddings mock - 384 dim
-    mock_embedding = [0.021, -0.118] + [0.0] * 382
-    
+    vector = APP_STATE["encoder"].encode(f"{type}: " + request.text, normalize_embeddings=True)
+
     return {
-        "embedding": mock_embedding
+        "embedding": vector.tolist()
     }
+
+def _top_terms(vectorizer, text):
+
+    n = 5
+    # Transform text using the save vectorizer
+    matrix = vectorizer.transform([text]).toarray()[0]
+
+    # Get vocabulary of vectorizer
+    keywords = vectorizer.get_feature_names_out()
+
+    # Sort the index from most to least relevance
+    index_sorted = matrix.argsort()[::-1]
+
+    # Return most relevant words (value > 0)
+    results = []
+    for i in index_sorted[:n]:
+        if matrix[i] > 0:
+            results.append(keywords[i])
+            
+    return results

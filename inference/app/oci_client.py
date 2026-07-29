@@ -1,6 +1,5 @@
-import os
+import io, os, joblib, oci
 
-import oci
 
 def _bucket_client():
     try:                                   
@@ -8,18 +7,14 @@ def _bucket_client():
         return oci.object_storage.ObjectStorageClient({}, signer=signer)
     except (oci.exceptions.ConfigFileNotFound, oci.exceptions.InvalidConfig):
         return oci.object_storage.ObjectStorageClient(oci.config.from_file())
-
+      
 def load_model():
-    file_name = "model.joblib"
-    bucket_name = "techmind-data" 
-    objet_path = "models/v1/model.joblib" 
-    
-    if not os.path.exists(file_name):
-        print("Downloading model from OCI")
+    client = _bucket_client()
+    ns = client.get_namespace().data
+    bucket = os.environ["MODEL_BUCKET"]                  
 
-        client = _bucket_client()
-        
-        ns = client.get_namespace().data
-        response = client.get_object(ns, bucket_name, objet_path)
+    prefix = client.get_object(ns, bucket, "models/latest.txt").data.content.decode().strip()
+    blob   = client.get_object(ns, bucket, prefix + "model.joblib").data.content
+    model  = joblib.load(io.BytesIO(blob))
 
-        return response
+    return model
