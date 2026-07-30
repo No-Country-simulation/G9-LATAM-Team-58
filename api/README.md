@@ -12,8 +12,8 @@ modelos ni hace matemáticas.
 ## Fronteras
 
 - La web habla solo con esta API; esta API es la única que llama a `inference/`.
-- Es la versión detallada del contrato de `docs/TECHMIND.md` §4.3. Cubre todas las
-  pantallas del diseño (Analizar, Buscar, Biblioteca, Mapa, Sidebar, Cargar CSV).
+- Este documento es el contrato público completo: cubre todas las pantallas del
+  diseño (Analizar, Buscar, Biblioteca, Mapa, Sidebar, Cargar CSV).
 
 ---
 
@@ -141,7 +141,7 @@ Recibe un texto, lo clasifica, lo persiste y devuelve el resultado enriquecido.
 
 > **Los `id` son strings.** Un contenido del corpus conserva el suyo
 > (`devto-4821`); uno que sube un usuario recibe `usr-{UUID}` acuñado por la API.
-> Es la misma clave del `.jsonl` y de `corpus_metadata`, así que no hay tabla de
+> Es la misma clave del `.jsonl` y del `corpus_index`, así que no hay tabla de
 > mapeo ni dos espacios de identificadores que reconciliar.
 
 **Errores:** `400 VALIDATION_ERROR` si falta `title` o `body`.
@@ -270,8 +270,10 @@ Dos modos: **semantic** (embeddings, vía inferencia) y **keyword** (léxica sob
 
 `total` y `elapsedMs` alimentan el "24 resultados · 38 ms" y el paginador.
 
-> En `mode=keyword` el campo de ranking puede ser un `score` léxico en vez de
-> `similarity`; el resto de la forma es igual.
+> **`mode=keyword` tiene la misma forma, pero no hay ranking.** El filtro es léxico,
+> así que `similarity` viene fija en `1.0` para todos los resultados y `elapsedMs` en
+> `0`. El orden lo decide la base de datos, no una puntuación. Solo `mode=semantic`
+> devuelve una similitud real y mide el tiempo de la consulta.
 
 **Errores:** `400 VALIDATION_ERROR` si falta `q`.
 
@@ -349,7 +351,7 @@ Totales por categoría para las tarjetas de Biblioteca y la leyenda del mapa.
 
 ---
 
-## `POST /contents/batch` — carga por lotes *(opcional)*
+## `POST /contents/batch` — carga por lotes
 
 Ingiere varios contenidos desde un CSV.
 
@@ -370,7 +372,7 @@ Ingiere varios contenidos desde un CSV.
 }
 ```
 
-> **Síncrono:** responde una sola vez al terminar de procesar todo el CSV. No hay
-> progreso en vivo; la web muestra una barra indeterminada mientras espera.
+> **Síncrono:** la respuesta llega una sola vez, al terminar de procesar todo el CSV.
+> La web muestra una barra indeterminada mientras espera.
 
 **Errores:** `400 VALIDATION_ERROR` si el CSV está mal formado o vacío.

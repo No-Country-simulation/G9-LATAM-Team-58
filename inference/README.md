@@ -11,8 +11,24 @@ lo resuelve la Autonomous Database con `VECTOR_DISTANCE`, orquestado por `api/`.
 ## Fronteras
 
 - Solo lo llama `api/`, nunca la web.
-- Contrato del artefacto y prefijos E5 (`passage:`/`query:`) en `docs/TECHMIND.md`
-  §4.2. El transformer no va dentro del `.joblib`; se hornea en la imagen.
+- Las claves de `model.joblib` y cómo se generan están en `notebook/README.md`. El
+  transformer **no** va dentro del `.joblib` — solo su nombre; la imagen Docker lo
+  hornea en tiempo de build para que el contenedor arranque sin red.
+- **Prefijos E5.** El contenido se codifica como `"passage: {texto}"` y las consultas
+  como `"query: {texto}"`. Mezclarlos degrada la búsqueda en silencio, sin error.
+- **Dos dimensiones, y no son intercambiables.** El clasificador consume
+  `meta["feature_dim"]` features —`hstack([embedding, normalize(svd.transform(tfidf))])`—
+  pero lo que sale al contrato y a la base de datos es **siempre** el embedding de
+  `meta["dim"]` (384). Léelos del `meta`, no los hardcodees.
+- **La búsqueda por similitud vive en la Autonomous Database**, no aquí: la API pide
+  el vector de la consulta a `POST /embed` y la base resuelve el ranking con
+  `VECTOR_DISTANCE`. Este servicio vectoriza; no busca, no indexa y no persiste.
+- **La proyección se calcula en caliente.** `umap_reducer.transform()` corre dentro
+  de `POST /predict`, así que un contenido añadido en vivo recibe sus coordenadas en
+  el momento y la API las persiste con el resto. El mapa incluye siempre todo el
+  corpus.
+- **No hay reentrenamiento.** El clasificador es una `LogisticRegression` y el
+  artefacto se sustituye publicando una versión nueva en el bucket.
 
 ---
 
@@ -72,7 +88,7 @@ lo resuelve la Autonomous Database con `VECTOR_DISTANCE`, orquestado por `api/`.
 | `keywords` | string[] | términos clave extraídos |
 | `explanation` | string[] | términos con más peso en la decisión (explicabilidad) |
 | `embedding` | float32[384] | vector L2-normalizado, listo para la columna `VECTOR` |
-| `cluster_id` | int | cluster de KMeans (en el `.joblib` la clave es `cluster`) |
+| `cluster_id` | int | cluster de KMeans (en `corpus_index.npz` la columna se llama `cluster`) |
 | `x`, `y` | float | coordenadas UMAP, para el mapa del corpus |
 
 > **Por qué devuelve el embedding.** `cluster_id`, `x` e `y` salen de `kmeans` y
@@ -82,6 +98,85 @@ lo resuelve la Autonomous Database con `VECTOR_DISTANCE`, orquestado por `api/`.
 > endpoint resuelve el camino de indexación completo en una sola llamada.
 
 Este endpoint aplica el prefijo `"passage: "`, siempre.
+
+### ⚠️ El clasificador NO come el embedding
+
+Este error **revienta a la vista**, en el primer request. Es el mejor de los cuatro
+que cubre esta sección: los dos primeros de la lista de más abajo no avisan de nada.
+
+El `classifier` del artefacto espera **884 valores** (`meta["feature_dim"]`), no los
+384 del embedding (`meta["dim"]`). Son el embedding de E5 **concatenado con el
+vocabulario del texto comprimido** por el `svd`: `384 + 500`. Pasarle el embedding a
+secas provoca:
+
+```
+ValueError: X has 384 features, but LogisticRegression is expecting 884 features as input
+```
+
+Hay que construirlas antes de clasificar:
+
+```python
+import joblib
+import numpy as np
+from sklearn.preprocessing import normalize
+
+art        = joblib.load("model.joblib")
+classifier = art["classifier"]
+svd        = art["svd"]                    # TruncatedSVD de 500 componentes
+tfidf      = art["baseline_vectorizer"]    # el MISMO que alimentó al svd
+
+def build_features(embedding: np.ndarray, text: str) -> np.ndarray:
+    """embedding: (1, 384) -> (1, 884)"""
+    if svd is None:                        # guarda: solo con svd_components=0
+        return embedding
+    reduced = normalize(svd.transform(tfidf.transform([text])))
+    return np.hstack([embedding, reduced])
+
+# --- en el handler de POST /predict ---
+# El prefijo literal viaja en meta["doc_prefix"]: léelo de ahí, no lo hardcodees.
+embedding     = encoder.encode([f"passage: {text}"], normalize_embeddings=True)
+features      = build_features(embedding, text)
+probabilities = classifier.predict_proba(features)[0]
+best          = int(probabilities.argmax())
+
+category    = art["label_encoder"].classes_[best]
+probability = float(probabilities[best])
+```
+
+Tres reglas que van juntas. Las dos primeras **no lanzan excepción**: el servicio
+responde `200 OK` con resultados peores, y eso no se nota hasta la demo.
+
+- **`normalize()` no es opcional.** El embedding de E5 sale con norma 1; si el bloque
+  del TF-IDF entra con otra escala, la regularización castiga al pequeño y su
+  aportación se pierde. No hay error, solo peores resultados.
+- **El TF-IDF tiene que ser `baseline_vectorizer`**, el mismo sobre el que se ajustó
+  el `svd`. Usar `keyword_vectorizer` da un vocabulario distinto y resultados
+  incoherentes sin lanzar excepción.
+- **Lo que sale al contrato es `embedding`, nunca `features`.** El campo `embedding`
+  de la respuesta son los `meta["dim"]` valores crudos: es lo que se guarda en
+  `contents.embedding VECTOR(384)` y contra lo que corre `VECTOR_DISTANCE`. Devolver
+  ahí las features sí falla, pero en la base y no aquí: la inserción rechaza 884
+  valores en una columna de 384.
+
+Por la misma razón, **`kmeans` y `umap_reducer` reciben el embedding crudo**, no las
+features: así el `cluster_id` y las coordenadas viven en el mismo espacio que la base
+usa para buscar.
+
+```python
+cluster_id = int(art["kmeans"].predict(embedding)[0])
+x, y       = art["umap_reducer"].transform(embedding)[0]
+```
+
+No escribas `884` en el código: léelo de `meta["feature_dim"]`. Es un parámetro de
+entrenamiento, y el artefacto lo publica precisamente para que inference no dependa
+de un número fijo. Una comprobación al arrancar corta el problema en el despliegue en
+vez de en el primer request:
+
+```python
+assert classifier.n_features_in_ == art["meta"]["feature_dim"]
+```
+
+Las 9 claves del artefacto y qué contiene cada una: `notebook/README.md`.
 
 ---
 
@@ -139,33 +234,40 @@ Solo el vector. Lo usa `GET /search?mode=semantic` de la API, que después lanza
   "version": "v1",
   "embedding_model": "intfloat/multilingual-e5-small",
   "dim": 384,
+  "feature_dim": 884,
+  "svd_components": 500,
+  "classifier_c": 4.0,
+  "doc_prefix": "passage: ",
+  "query_prefix": "query: ",
   "categories": ["Backend", "Frontend", "Móvil", "Datos e IA", "DevOps y Cloud", "Bases de datos", "Seguridad", "Fundamentos"],
-  "metrics": { "embedding_macro_f1_es": 0.0, "tfidf_macro_f1_es": 0.0 }
+  "n_clusters": 8,
+  "terms_by_category": { "Backend": ["spring", "java", "…10 términos…"], "…": [] },
+  "metrics": {
+    "embedding_macro_f1_en": 0.0,
+    "embedding_macro_f1_es": 0.0,
+    "tfidf_macro_f1_en": 0.0,
+    "tfidf_macro_f1_es": 0.0,
+    "embedding_macro_f1_es_reliable": 0.0,
+    "es_reliable_categories": 8,
+    "es_min_support": 30
+  },
+  "train_size": 0
 }
 ```
 
+Son las 13 claves del bloque `meta`, tal cual las serializa el notebook. Las métricas
+en inglés llegan como `null` si el artefacto se entrenó sin `test_corpus.jsonl`: ese
+conjunto es opcional y su ausencia no invalida el modelo.
+
+`dim` son las dimensiones del **embedding**, que es lo que viaja en el contrato y lo
+que guarda la base. `feature_dim` es lo que consume el **clasificador**
+(`dim + svd_components`). Son dos números distintos: ver *"El clasificador NO come el
+embedding"* en `POST /predict`.
+
+`embedding_*` son las métricas del clasificador de producción y `tfidf_*` las del
+modelo explicable, que sirve de referencia. `embedding_macro_f1_es_reliable` es la
+macro-F1 en español restringida a las categorías con muestra suficiente en el test
+(`meta.metrics.es_min_support`, 30 documentos); la macro-F1 promedia sin ponderar por
+tamaño, así que una categoría con muy pocos documentos aporta ruido.
+
 **Errores:** `503` si el modelo aún no está cargado.
-
----
-
-## Lo que este servicio ya NO hace
-
-Tres endpoints desaparecieron al mover el índice a la Autonomous Database. Si vienes
-del notebook o de una versión anterior de este documento, búscalos aquí:
-
-| Antes | Ahora |
-|---|---|
-| `POST /similar` | La API consulta `VECTOR_DISTANCE` en la base. Ver `api/README.md` |
-| `POST /index` | La API persiste lo que devuelve `POST /predict` |
-| `GET /projection` | Las coordenadas `x`/`y` están en la tabla `contents` |
-
-`index_new_content()` del notebook hacía **tres cosas a la vez** —vectorizar,
-asignar cluster/coordenadas y opcionalmente reentrenar—. En producción esas tres
-cosas tienen tres dueños distintos: la función no se eliminó, se descompuso. El
-`partial_fit` quedaría en un `POST /learn` que está **diseñado pero no
-implementado** (`docs/TECHMIND.md` §3).
-
-Efecto secundario bueno: los contenidos añadidos en vivo **sí aparecen en el mapa**.
-Antes la proyección salía congelada del `.joblib` y había que re-proyectar en el
-notebook; ahora `umap_reducer.transform()` corre dentro de `POST /predict` y sus
-coordenadas se persisten con el resto.

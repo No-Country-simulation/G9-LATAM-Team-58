@@ -1,3 +1,11 @@
 fastapi
 uvicorn
 pydantic
+
+# Pinned to the versions that produced model.joblib, in
+# notebook/TechMind_02_Model_Training.ipynb. A scikit-learn pickle has to be loaded
+# with the version that wrote it: another one is undefined behaviour, and the
+# mismatch shows up as a warning rather than an error.
+joblib==1.5.3
+scikit-learn==1.9.0
+sentence-transformers==5.6.1
