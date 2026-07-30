@@ -15,17 +15,8 @@ COPY requirements.txt .
 # when building on x86 (local dev, GitHub runners), not here.
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ---------------------------------------------------------------------------
-# TODO (when the real model lands): bake the transformer into the image so the
-# container starts offline. The E5 weights are NOT inside model.joblib -- only
-# its name is. Add this once sentence-transformers is in requirements.txt:
-#
-#   RUN python -c "from sentence_transformers import SentenceTransformer; \
-#       SentenceTransformer('intfloat/multilingual-e5-small')"
-#
-# model.joblib itself is downloaded at startup from the techmind-data bucket
-# via Instance Principal. It is never baked in and never committed.
-# ---------------------------------------------------------------------------
+RUN python -c "from sentence_transformers import SentenceTransformer; \
+    SentenceTransformer('intfloat/multilingual-e5-small')"
 
 COPY app ./app
 
