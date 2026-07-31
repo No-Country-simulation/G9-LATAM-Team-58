@@ -8,6 +8,7 @@ import com.G9_LATAM_TEAM_58.techapi.domain.ContentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import java.util.List;
  * Extracted from CorpusSeedServiceImpl so that @Transactional is applied via proxy (no self-invocation).
  */
 @Service
+@ConditionalOnProperty(name = "app.database.enabled", havingValue = "true")
 public class CorpusBatchProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(CorpusBatchProcessor.class);
