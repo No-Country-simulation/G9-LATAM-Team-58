@@ -3,6 +3,8 @@ package com.G9_LATAM_TEAM_58.techapi.domain;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.List;
@@ -51,5 +53,6 @@ public class Content {
     private String language;
 
     @Column(name = "added_at")
+    @JdbcTypeCode(SqlTypes.TIMESTAMP)
     private Instant addedAt;
 }
