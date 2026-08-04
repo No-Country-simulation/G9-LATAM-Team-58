@@ -32,10 +32,6 @@ export const router = createBrowserRouter([
 				lazy: async () => ({ Component: (await import('@/pages/content-detail-page')).ContentDetailPage })
 			},
 			{
-				path: 'nuevo',
-				lazy: async () => ({ Component: (await import('@/pages/new-content-page')).NewContentPage })
-			},
-			{
 				path: 'lote',
 				lazy: async () => ({ Component: (await import('@/pages/batch-page')).BatchPage })
 			},

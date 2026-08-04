@@ -4,7 +4,6 @@ import {
 	IconHome,
 	IconMap2,
 	IconSearch,
-	IconSquarePlus,
 	IconStack2,
 	type Icon
 } from '@tabler/icons-react';
@@ -40,7 +39,6 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: 'Contenido',
 		items: [
 			{ to: '/contenidos', label: 'Biblioteca', icon: IconStack2 },
-			{ to: '/nuevo', label: 'Nuevo contenido', icon: IconSquarePlus },
 			{ to: '/lote', label: 'Carga CSV', icon: IconFileTypeCsv }
 		]
 	}

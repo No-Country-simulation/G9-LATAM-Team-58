@@ -33,9 +33,6 @@ export function HomePage() {
 				<Link className="btn btn--primary" to="/buscar">
 					Buscar
 				</Link>
-				<Link className="btn" to="/nuevo">
-					Añadir contenido
-				</Link>
 				<Link className="btn" to="/mapa">
 					Ver el mapa
 				</Link>
