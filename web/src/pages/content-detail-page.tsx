@@ -1,6 +1,16 @@
-import { Link, useParams } from 'react-router';
-import { useContent, useRelatedContents } from '@/features/contents';
-import { formatDateTime, formatProbability, formatSimilarity } from '@/shared/lib/format';
+import { useParams } from 'react-router';
+import { ErrorBanner } from '@/components/feedback/error-banner';
+import {
+	ClassificationPanel,
+	DetailBody,
+	DetailHeader,
+	DetailSkeleton,
+	KeywordsPanel,
+	ModelInfo,
+	RelatedPanel,
+	useContent,
+	useRelatedContents
+} from '@/features/contents';
 
 export function ContentDetailPage() {
 	const { id = '' } = useParams();
@@ -8,66 +18,32 @@ export function ContentDetailPage() {
 	const related = useRelatedContents(id);
 
 	if (content.isPending) {
-		return <p className="muted">Cargando…</p>;
+		return <DetailSkeleton />;
 	}
 
 	if (content.isError) {
-		return <p className="error-text">{content.error.message}</p>;
+		return (
+			<ErrorBanner title="No se pudo cargar el contenido" error={content.error} onRetry={() => content.refetch()} />
+		);
 	}
 
 	const detail = content.data;
 
 	return (
-		<div className="stack">
-			<div>
-				<span className="badge">{detail.category}</span>
-				<h1>{detail.title}</h1>
-				<p className="muted">
-					{detail.source} · {formatDateTime(detail.addedAt)} · confianza {formatProbability(detail.probability)}
-					{detail.url && (
-						<>
-							{' · '}
-							<a href={detail.url} target="_blank" rel="noreferrer">
-								Fuente original
-							</a>
-						</>
-					)}
-				</p>
-			</div>
+		<div className="mx-auto flex w-full max-w-300 flex-col gap-6 pt-6 pb-20">
+			<DetailHeader detail={detail} />
 
-			<p>{detail.body}</p>
-
-			{detail.keywords.length > 0 && (
-				<div className="row">
-					{detail.keywords.map(keyword => (
-						<span key={keyword} className="badge">
-							{keyword}
-						</span>
-					))}
+			<div className="flex flex-row items-start gap-6">
+				<div className="w-2/3">
+					<DetailBody body={detail.body} />
 				</div>
-			)}
-
-			<section className="stack">
-				<h2>Relacionados</h2>
-				{related.isPending && <p className="muted">Cargando…</p>}
-				{related.isError && <p className="error-text">{related.error.message}</p>}
-				{related.isSuccess && related.data.related.length === 0 && (
-					<p className="muted">Todavía no hay contenidos relacionados.</p>
-				)}
-				{related.isSuccess && related.data.related.length > 0 && (
-					<ul className="result-list">
-						{related.data.related.map(item => (
-							<li key={item.id} className="card result-item">
-								<Link to={`/contenidos/${item.id}`}>{item.title}</Link>
-								<span className="row">
-									<span className="badge">{item.category}</span>
-									<span className="muted">{formatSimilarity(item.similarity)}</span>
-								</span>
-							</li>
-						))}
-					</ul>
-				)}
-			</section>
+				<aside className="flex w-1/3 flex-col gap-4">
+					<ClassificationPanel category={detail.category} probability={detail.probability} />
+					<KeywordsPanel keywords={detail.keywords} />
+					<RelatedPanel isPending={related.isPending} error={related.error} related={related.data?.related ?? null} />
+					<ModelInfo />
+				</aside>
+			</div>
 		</div>
 	);
 }

@@ -1,18 +1,22 @@
 import { Link } from 'react-router';
 import { IconArrowRight } from '@tabler/icons-react';
-import { CategoryBadge, Metric, SectionHeading } from '@/components/data-display';
+import {
+	CategoryBadge,
+	ConfidenceBar,
+	KeywordChips,
+	Metric,
+	RelatedList,
+	SectionHeading
+} from '@/components/data-display';
 import { ErrorBanner } from '@/components/feedback/error-banner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import type { ApiError } from '@/shared/api/client';
 import type { IngestionResponse } from '@/shared/api/contracts';
 import { formatProbability } from '@/shared/lib/format';
-import { ConfidenceBar } from './confidence-bar';
 import { EmptyPlaceholder } from './empty-placeholder';
 import { ExplanationList } from './explanation-list';
-import { KeywordChips } from './keyword-chips';
 import { ProcessingPanel } from './processing-panel';
-import { RelatedList } from './related-list';
 
 interface ResultPanelProps {
 	isPending: boolean;

@@ -1,4 +1,4 @@
-import { SegmentedBar } from '@/components/data-display';
+import { SegmentedBar } from './segmented-bar';
 
 /**
  * Semantic wrapper over `SegmentedBar`: adds the progressbar role and the
