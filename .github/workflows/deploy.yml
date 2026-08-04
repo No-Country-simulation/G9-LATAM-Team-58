@@ -4,10 +4,9 @@ name: Deploy
 # GitHub runners are x86. Cross-building with buildx + QEMU works but takes
 # 20-40 min once the transformer is baked in.
 #
-# A single job: api + inference build on the VM via docker compose. The web front
-# (nginx) sits behind `profiles: [web]` in docker-compose.yml and is NOT built
-# yet -- web/ is still a README with no package.json. When the front lands, add
-# `--profile web` to the build/up commands below (or drop the profile in compose).
+# A single job: api + inference + web build on the VM via docker compose. The web
+# front (nginx) sits behind `profiles: [web]` in docker-compose.yml; the build/up
+# commands below pass `--profile web` to bring it in.
 #
 # The front is NOT uploaded to a bucket -- OCI Object Storage can't host a SPA,
 # so nginx will serve it from the VM. No OCI_CLI_* secrets needed.
@@ -22,7 +21,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: api + inference -> Ampere VM
+    name: api + inference + web -> Ampere VM
     runs-on: ubuntu-latest
     steps:
       - name: Build and restart on the VM
@@ -37,9 +36,7 @@ jobs:
             cd ~/techmind
             git fetch origin main
             git reset --hard origin/main
-            # web is intentionally excluded (profiles: [web]) until web/ is real.
-            # Add `--profile web` here when the front lands.
-            docker compose build
-            docker compose up -d --remove-orphans
+            docker compose --profile web build
+            docker compose --profile web up -d --remove-orphans
             docker image prune -f
             docker compose ps
