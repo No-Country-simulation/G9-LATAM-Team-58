@@ -31,8 +31,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Relaxed binding: SPRING_DATASOURCE_URL -> spring.datasource.url, and
-      # INFERENCE_BASE_URL -> inference.base-url.
+      # 'db' profile turns on the DB-backed beans (app.database.enabled=true) --
+      # without it the app runs in scaffold mode and every DB-backed endpoint
+      # returns 503. Relaxed binding: SPRING_DATASOURCE_URL -> spring.datasource.url,
+      # and INFERENCE_BASE_URL -> inference.base-url.
+      SPRING_PROFILES_ACTIVE: db
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
