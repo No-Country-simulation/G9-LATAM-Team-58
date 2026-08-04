@@ -1,6 +1,9 @@
 export { CategoryBadge } from './category-badge';
 export { CategoryDot } from './category-dot';
+export { ConfidenceBar } from './confidence-bar';
 export { EmptyState } from './empty-state';
+export { KeywordChips } from './keyword-chips';
 export { Metric } from './metric';
+export { RelatedList } from './related-list';
 export { SectionHeading } from './section-heading';
 export { SegmentedBar } from './segmented-bar';

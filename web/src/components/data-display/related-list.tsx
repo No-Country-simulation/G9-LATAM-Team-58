@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
-import { CategoryDot } from '@/components/data-display';
 import type { RelatedItem } from '@/shared/api/contracts';
 import { formatCosine } from '@/shared/lib/format';
+import { CategoryDot } from './category-dot';
 
 export function RelatedList({ related }: { related: RelatedItem[] }) {
 	return (

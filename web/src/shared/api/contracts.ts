@@ -14,7 +14,10 @@ export const contentSummarySchema = z.object({
 	language: z.string(),
 	addedAt: z.string()
 });
-export const contentListSchema = z.array(contentSummarySchema);
+export const contentListResponseSchema = z.object({
+	total: z.number(),
+	items: z.array(contentSummarySchema)
+});
 
 export const contentDetailSchema = contentSummarySchema.extend({
 	body: z.string(),
@@ -115,6 +118,7 @@ export const apiErrorResponseSchema = z.object({
 /* ---------- Inferred types ---------- */
 
 export type ContentSummary = z.infer<typeof contentSummarySchema>;
+export type ContentListResponse = z.infer<typeof contentListResponseSchema>;
 export type ContentDetail = z.infer<typeof contentDetailSchema>;
 export type RelatedItem = z.infer<typeof relatedItemSchema>;
 export type RelatedContentResponse = z.infer<typeof relatedContentResponseSchema>;

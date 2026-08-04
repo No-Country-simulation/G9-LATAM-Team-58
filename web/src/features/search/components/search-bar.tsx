@@ -1,38 +1,46 @@
-import { SEARCH_MODES, type SearchMode } from '@/shared/config/constants';
+import { IconSearch, IconX } from '@tabler/icons-react';
+import { Button } from '@/components/ui/button';
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
 
 interface SearchBarProps {
-	query: string;
-	mode: SearchMode;
+	value: string;
 	isSearching: boolean;
-	onQueryChange: (query: string) => void;
-	onModeChange: (mode: SearchMode) => void;
+	onChange: (value: string) => void;
+	onSubmit: () => void;
+	onClear: () => void;
 }
 
-export function SearchBar({ query, mode, isSearching, onQueryChange, onModeChange }: SearchBarProps) {
+export function SearchBar({ value, isSearching, onChange, onSubmit, onClear }: SearchBarProps) {
 	return (
-		<div className="stack" role="search">
-			<input
-				type="search"
-				className="input"
-				placeholder="Buscar por significado o por palabra clave…"
-				value={query}
-				onChange={event => onQueryChange(event.target.value)}
-				aria-label="Término de búsqueda"
-			/>
-			<div className="row">
-				{SEARCH_MODES.map(({ value, label }) => (
-					<button
-						key={value}
-						type="button"
-						className={mode === value ? 'btn btn--primary' : 'btn'}
-						aria-pressed={mode === value}
-						onClick={() => onModeChange(value)}
-					>
-						{label}
-					</button>
-				))}
-				{isSearching && <span className="muted">Buscando…</span>}
-			</div>
-		</div>
+		<form
+			className="flex gap-3"
+			role="search"
+			onSubmit={event => {
+				event.preventDefault();
+				onSubmit();
+			}}
+		>
+			<InputGroup className="flex-1">
+				<InputGroupInput
+					value={value}
+					onChange={event => onChange(event.target.value)}
+					placeholder="¿Qué quieres encontrar?"
+					aria-label="Término de búsqueda"
+				/>
+				<InputGroupAddon>
+					<IconSearch />
+				</InputGroupAddon>
+				{value && (
+					<InputGroupAddon align="inline-end">
+						<InputGroupButton type="button" size="icon-xs" aria-label="Limpiar búsqueda" onClick={onClear}>
+							<IconX />
+						</InputGroupButton>
+					</InputGroupAddon>
+				)}
+			</InputGroup>
+			<Button type="submit" disabled={isSearching}>
+				Buscar
+			</Button>
+		</form>
 	);
 }

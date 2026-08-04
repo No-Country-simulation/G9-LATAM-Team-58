@@ -150,30 +150,36 @@ Recibe un texto, lo clasifica, lo persiste y devuelve el resultado enriquecido.
 
 ## `GET /contents` — listar contenidos
 
-Lista los contenidos ya indexados. Acepta un filtro opcional por categoría.
+Lista los contenidos ya indexados. Acepta filtro opcional por categoría y por
+título.
 
 **Recibe** (query params, todos opcionales):
 
 | Param | Tipo | Default | Qué hace |
 |---|---|---|---|
 | `category` | string (una de las 8) | — | filtra por categoría |
-| `sort` | string | `addedAt,desc` | orden (p.ej. `addedAt,desc`) |
+| `q` | string | — | filtra por título, `LIKE` insensible a mayúsculas. Combinable con `category` |
+| `sort` | string | `""` | solo `added_at`/`addedAt` ordenan (DESC); cualquier otro valor = sin orden |
 | `page` | int | 0 | paginación |
 | `size` | int | 20 | tamaño de página |
 
-**Devuelve** `200 OK` — array de resúmenes:
+**Devuelve** `200 OK` — total y resúmenes:
 
 ```json
-[
-  { "id": "devto-4821", "title": "Introducción a Spring Boot", "category": "Backend", "source": "dev.to", "probability": 0.89, "addedAt": "2026-07-14T09:12:00Z" },
-  { "id": "medium-1187", "title": "Componentes en React", "category": "Frontend", "source": "medium", "probability": 0.81, "addedAt": "2026-07-15T16:40:00Z" }
-]
+{
+  "total": 37,
+  "items": [
+    { "id": "devto-4821", "title": "Introducción a Spring Boot", "category": "Backend", "source": "dev.to", "language": "es", "addedAt": "2026-07-14T09:12:00Z" },
+    { "id": "medium-1187", "title": "Componentes en React", "category": "Frontend", "source": "medium", "language": "es", "addedAt": "2026-07-15T16:40:00Z" }
+  ]
+}
 ```
 
 | Campo | Tipo | Qué es |
 |---|---|---|
+| `total` | long | total de filas que coinciden con `category`/`q` combinados — úsalo para paginar |
 | `source` | string | fuente del contenido (para la columna "Fuente") |
-| `probability` | float | confianza de la clasificación ("Confianza") |
+| `language` | string | idioma del contenido |
 | `addedAt` | ISO-8601 | fecha de alta (orden y marca "recién añadido") |
 
 **Ejemplos:**
@@ -181,6 +187,7 @@ Lista los contenidos ya indexados. Acepta un filtro opcional por categoría.
 ```
 GET /contents                  -> todos
 GET /contents?category=Backend -> solo Backend
+GET /contents?q=kubernetes     -> filtra por título
 GET /contents?page=2&size=50   -> paginado
 ```
 

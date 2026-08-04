@@ -1,10 +1,10 @@
 import { apiClient } from '@/shared/api/client';
 import {
 	contentDetailSchema,
-	contentListSchema,
+	contentListResponseSchema,
 	relatedContentResponseSchema,
 	type ContentDetail,
-	type ContentSummary,
+	type ContentListResponse,
 	type RelatedContentResponse
 } from '@/shared/api/contracts';
 
@@ -12,20 +12,27 @@ import {
 // anything else means unordered.
 export type ContentsSort = 'added_at' | 'addedAt';
 
+export const DEFAULT_CONTENTS_PAGE_SIZE = 20;
+
 export interface ContentsFilter {
 	category?: string;
+	q?: string;
 	sort?: ContentsSort;
 	page?: number;
 	size?: number;
 }
 
-export async function getContents({ category, sort, page = 0, size = 20 }: ContentsFilter = {}): Promise<
-	ContentSummary[]
-> {
+export async function getContents({
+	category,
+	q,
+	sort,
+	page = 0,
+	size = DEFAULT_CONTENTS_PAGE_SIZE
+}: ContentsFilter = {}): Promise<ContentListResponse> {
 	const { data } = await apiClient.get('/contents', {
-		params: { category, sort, page, size }
+		params: { category, q, sort, page, size }
 	});
-	return contentListSchema.parse(data);
+	return contentListResponseSchema.parse(data);
 }
 
 export async function getContent(id: string): Promise<ContentDetail> {

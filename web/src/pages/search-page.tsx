@@ -1,26 +1,59 @@
-import { useState } from 'react';
-import { SearchBar, SearchResults, useSearch } from '@/features/search';
+import { useStats } from '@/features/dashboard';
+import { SearchBar, SearchFilters, SearchResults, useSearch, useSearchParamsState } from '@/features/search';
 import { useDebounce } from '@/shared/hooks/use-debounce';
-import type { SearchMode } from '@/shared/config/constants';
 
 export function SearchPage() {
-	const [query, setQuery] = useState('');
-	const [mode, setMode] = useState<SearchMode>('semantic');
-	const debouncedQuery = useDebounce(query);
+	const params = useSearchParamsState();
+	const stats = useStats();
+	const debouncedQuery = useDebounce(params.query);
+	const hasQuery = debouncedQuery.trim().length > 0;
 
-	const search = useSearch({ query: debouncedQuery, mode });
+	const search = useSearch({
+		query: debouncedQuery,
+		mode: params.mode,
+		category: params.category,
+		page: params.page
+	});
 
 	return (
-		<div className="stack">
-			<h1>Buscar</h1>
+		<div className="mx-auto flex w-full max-w-[900px] flex-col gap-6 pt-8 pb-20">
+			<header className="flex flex-col items-center gap-2 text-center">
+				<h1>Buscar en la base de conocimiento</h1>
+				{stats.data && (
+					<p className="text-sm text-muted-foreground">
+						Búsqueda semántica sobre <span className="font-mono text-foreground tabular-nums">{stats.data.total}</span>{' '}
+						documentos vectorizados.
+					</p>
+				)}
+			</header>
+
 			<SearchBar
-				query={query}
-				mode={mode}
+				value={params.query}
 				isSearching={search.isFetching}
-				onQueryChange={setQuery}
-				onModeChange={setMode}
+				onChange={params.setQuery}
+				onSubmit={() => undefined}
+				onClear={() => params.setQuery('')}
 			/>
-			<SearchResults search={search} hasQuery={debouncedQuery.trim().length > 0} />
+
+			<SearchFilters
+				mode={params.mode}
+				category={params.category}
+				onModeChange={params.setMode}
+				onCategoryChange={params.setCategory}
+			/>
+
+			<SearchResults
+				hasQuery={hasQuery}
+				isPending={search.isPending}
+				error={search.error}
+				data={search.data ?? null}
+				mode={params.mode}
+				page={params.page}
+				onRetry={() => search.refetch()}
+				onExampleSelect={params.setQuery}
+				onClearFilters={params.clearFilters}
+				onPageChange={params.setPage}
+			/>
 		</div>
 	);
 }

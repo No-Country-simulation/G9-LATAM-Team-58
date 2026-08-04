@@ -1,53 +1,126 @@
-import type { UseQueryResult } from '@tanstack/react-query';
+import { IconArrowRight, IconCompass, IconSearchOff } from '@tabler/icons-react';
 import { Link } from 'react-router';
-import { CategoryBadge } from '@/components/data-display';
-import { ApiError } from '@/shared/api/client';
+import { EmptyState } from '@/components/data-display';
+import { ErrorBanner } from '@/components/feedback/error-banner';
+import { Button } from '@/components/ui/button';
+import type { ApiError } from '@/shared/api/client';
 import type { SearchResponse } from '@/shared/api/contracts';
-import { formatSimilarity } from '@/shared/lib/format';
+import type { SearchMode } from '@/shared/config/constants';
+import { DEFAULT_SEARCH_PAGE_SIZE } from '../api';
+import { ExampleQueries } from './example-queries';
+import { ResultCard } from './result-card';
+import { ResultsSkeleton } from './results-skeleton';
+import { SearchMeta } from './search-meta';
+import { SearchPagination } from './search-pagination';
 
 interface SearchResultsProps {
-	search: UseQueryResult<SearchResponse, ApiError>;
 	hasQuery: boolean;
+	isPending: boolean;
+	error: ApiError | null;
+	data: SearchResponse | null;
+	mode: SearchMode;
+	page: number;
+	onRetry: () => void;
+	onExampleSelect: (query: string) => void;
+	onClearFilters: () => void;
+	onPageChange: (page: number) => void;
 }
 
-export function SearchResults({ search, hasQuery }: SearchResultsProps) {
+/** Routes the five states of the results area; each one owns its layout. */
+export function SearchResults({
+	hasQuery,
+	isPending,
+	error,
+	data,
+	mode,
+	page,
+	onRetry,
+	onExampleSelect,
+	onClearFilters,
+	onPageChange
+}: SearchResultsProps) {
 	if (!hasQuery) {
-		return <p className="muted">Escribe algo para buscar en la base de conocimiento.</p>;
+		return (
+			<div className="flex flex-col gap-10">
+				<EmptyState
+					icon={IconCompass}
+					title="Empieza una búsqueda"
+					description="Escribe una idea, no palabras exactas: el modelo busca por significado."
+				/>
+				<div>
+					<h4 className="mb-3 font-mono text-[11px] tracking-[0.06em] text-muted-foreground uppercase">
+						Búsquedas de ejemplo
+					</h4>
+					<ExampleQueries onSelect={onExampleSelect} />
+				</div>
+			</div>
+		);
 	}
 
-	if (search.isPending) {
-		return <p className="muted">Buscando…</p>;
+	if (isPending) {
+		return <ResultsSkeleton />;
 	}
 
-	if (search.isError) {
-		return <p className="error-text">{search.error.message}</p>;
+	if (error) {
+		return (
+			<div className="flex flex-col gap-6">
+				<ErrorBanner title="El servicio de búsqueda no responde" error={error} onRetry={onRetry} />
+				<EmptyState
+					icon={IconSearchOff}
+					title="Búsqueda no disponible"
+					description="Puedes seguir consultando la biblioteca mientras se restablece el servicio."
+				>
+					<Button asChild variant="outline" data-icon="inline-end">
+						<Link to="/contenidos">
+							Ir a la biblioteca
+							<IconArrowRight />
+						</Link>
+					</Button>
+				</EmptyState>
+			</div>
+		);
 	}
 
-	const { results, mode, elapsedMs } = search.data;
+	if (!data) {
+		return null;
+	}
 
-	if (results.length === 0) {
-		return <p className="muted">Sin resultados. Prueba con otros términos o cambia de modo.</p>;
+	if (data.results.length === 0) {
+		return (
+			<div className="flex flex-col gap-4">
+				<SearchMeta count={0} elapsedMs={data.elapsedMs} showElapsed={mode === 'semantic'} />
+				<EmptyState
+					icon={IconSearchOff}
+					title="Sin coincidencias"
+					description="Ningún documento supera el umbral de similitud para esta consulta. Prueba con términos más técnicos o quita filtros."
+				>
+					<Button type="button" variant="outline" onClick={onClearFilters}>
+						Limpiar filtros
+					</Button>
+					<Button asChild variant="outline" data-icon="inline-end">
+						<Link to="/contenidos">
+							Ver toda la biblioteca
+							<IconArrowRight />
+						</Link>
+					</Button>
+				</EmptyState>
+			</div>
+		);
 	}
 
 	return (
-		<div className="stack">
-			<p className="muted">
-				{results.length} resultados
-				{/* elapsedMs is only real in semantic mode; keyword hardcodes it to 0 */}
-				{mode === 'semantic' && ` en ${elapsedMs} ms`}
-			</p>
-			<ul className="result-list">
-				{results.map(result => (
-					<li key={result.id} className="card result-item">
-						<Link to={`/contenidos/${result.id}`}>{result.title}</Link>
-						<span className="row">
-							<CategoryBadge category={result.category} />
-							{/* keyword mode has no ranking: similarity is fixed at 1.0, so hide it */}
-							{mode === 'semantic' && <span className="muted">{formatSimilarity(result.similarity)}</span>}
-						</span>
-					</li>
+		<div className="flex flex-col gap-4">
+			<SearchMeta count={data.results.length} elapsedMs={data.elapsedMs} showElapsed={mode === 'semantic'} />
+			<div className="flex flex-col gap-3">
+				{data.results.map(result => (
+					<ResultCard key={result.id} result={result} showSimilarity={mode === 'semantic'} />
 				))}
-			</ul>
+			</div>
+			<SearchPagination
+				page={page}
+				canGoNext={data.results.length === DEFAULT_SEARCH_PAGE_SIZE}
+				onPageChange={onPageChange}
+			/>
 		</div>
 	);
 }
