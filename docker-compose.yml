@@ -50,9 +50,8 @@ services:
   # OCI Object Storage cannot host a SPA (no index fallback, 404 on refresh), so
   # the front lives here instead of a bucket.
   #
-  # Behind `profiles: [web]` because web/ is still just a README (no package.json
-  # to build). It stays out of a plain `docker compose build/up`; bring it in
-  # with `docker compose --profile web ...`. Drop this profile once web/ is real.
+  # Behind `profiles: [web]` so a plain `docker compose build/up` (local api+inference
+  # dev, no front) stays unaffected; deploy.yml passes `--profile web` to include it.
   web:
     build:
       context: ./web
