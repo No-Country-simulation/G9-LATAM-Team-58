@@ -2,26 +2,44 @@
 
 Construcción del corpus: extracción, limpieza y etiquetado. No se despliega.
 
+Notebook de entrega: [`TechMind_01_EDA_ETL.ipynb`](TechMind_01_EDA_ETL.ipynb).
+
 ## Consume
 
-- Fuentes públicas: Kaggle (arXiv `cs.*` + Medium Articles) para train en inglés;
-  scraping propio (dev.to ES, Wikipedia ES, freeCodeCamp) para test en español.
+- **Kaggle StackSample** (`stackoverflow/stacksample`) — preguntas de Stack Overflow
+  en inglés, etiquetadas por votación ponderada de tags.
+- **API de Dev.to** — artículos técnicos en inglés y en español. Es el registro que
+  más se parece al contenido que TechMind indexa.
+- **Volcados de Stack Exchange** (archive.org) — `es.stackoverflow.com` aporta
+  español; `security`, `dba` y `softwareengineering` aportan las categorías con
+  menos muestra, con el sitio como etiqueta.
 
 ## Expone
 
-- `processed/train_corpus.jsonl` y `processed/test_corpus_es.jsonl`, subidos al
-  bucket de Object Storage (no se commitean).
+- Tres ficheros subidos al bucket de Object Storage (no se commitean):
+
+  | Fichero | Para qué |
+  |---|---|
+  | `processed/train_corpus.jsonl` | entrenamiento |
+  | `processed/test_corpus.jsonl` | evaluación en inglés |
+  | `processed/test_corpus_es.jsonl` | evaluación en español (transferencia cross-lingual) |
+
 - Esquema por línea (JSONL), nombres de campo en inglés:
 
   ```json
   {"id":"...","title":"...","body":"...","category":"...","source":"...","url":"...","language":"es"}
   ```
 
+- Cada línea lleva además `quality` (score o reacciones del documento de origen). Es
+  un campo **interno del ETL**: alimenta el muestreo ponderado del balanceo y no se
+  persiste en la tabla `contents`.
+
 ## Fronteras
 
-- Categoría: una de las 8 (ver `docs/TECHMIND.md`). Rúbrica de etiquetado escrita
-  antes de etiquetar. JSONL, no CSV.
-- **Los siete campos son obligatorios, incluidos `source` y `language`.** No son
-  decorativos: son columnas de la tabla `contents` en la Autonomous Database.
-  Emitirlos desde la primera extracción cuesta cero; añadirlos después obliga a
-  **re-extraer el corpus entero**, porque no se pueden reconstruir a posteriori.
+- Categoría: **una sola** de las 8 — Backend · Frontend · Móvil · Datos e IA ·
+  DevOps y Cloud · Bases de datos · Seguridad · Fundamentos. La rúbrica de etiquetado
+  vive en el propio notebook, en `CATEGORY_TAGS`. JSONL, no CSV.
+- **Los siete campos del esquema son obligatorios, incluidos `source` y `language`.**
+  No son decorativos: son columnas de la tabla `contents` en la Autonomous Database,
+  y el corpus es la única fuente que puede emitirlos.
+- `random_state=42` en cada muestreo y en el split estratificado.

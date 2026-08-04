@@ -1,5 +1,11 @@
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
 
+import numpy as np
+from fastapi import FastAPI, HTTPException
+from sentence_transformers import SentenceTransformer
+from sklearn.preprocessing import normalize
+
+from app.oci_client import load_model
 from app.schemas import (
     EmbedRequest,
     EmbedResponse,
@@ -9,58 +15,136 @@ from app.schemas import (
     PredictResponse,
 )
 
-app = FastAPI(title = "TechMind Inference Service")
-
 APP_STATE = {
-    "model_loaded": True
+    "model_loaded": False,
+    "meta": None,
+    "kmeans": None,
+    "umap": None
 }
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    artifact = load_model()
+    assert artifact["classifier"].n_features_in_ == artifact["meta"]["feature_dim"]
+
+    APP_STATE["model"] = artifact
+    APP_STATE["encoder"] = SentenceTransformer(artifact["meta"]["embedding_model"])
+    APP_STATE["meta"] = artifact["meta"]
+    APP_STATE["kmeans"] = artifact.get("kmeans")
+    APP_STATE["umap"] = artifact.get("umap")
+    APP_STATE["model_loaded"] = True
+
+    yield
+
+    APP_STATE.clear()
+
+
+app = FastAPI(title = "TechMind Inference Service", lifespan = lifespan)
+
 
 @app.get("/health", response_model = HealthResponse)
 async def health_check():
+    charged_model = APP_STATE.get("model_loaded", False)
 
     return {
-        "status": "ok",
-        "model_loaded": True,
+        "status": "ok" if charged_model else "error",
+        "model_loaded": charged_model,
         "version": "v1"
     }
 
 @app.get("/model/info", response_model = ModelInfoResponse)
 async def get_model_info():
 
-    return{
-        "version": "v1",
-        "embedding_model": "intfloat/multilingual-e5-small",
-        "dim": 384,
-        "categories": ["Backend", "Frontend", "Móvil", "Datos e IA", "DevOps y Cloud", "Bases de datos", "Seguridad", "Fundamentos"],
-        "metrics": { 
-            "embedding_macro_f1_es": 0.0, 
-            "tfidf_macro_f1_es": 0.0 
-        }
-    }
+    if not APP_STATE["model_loaded"]:
+        raise HTTPException(status_code = 503, detail = "Model Not Found")
+
+    return APP_STATE["meta"]
+
 
 @app.post("/predict", response_model = PredictResponse)
 async def predict(request: PredictRequest):
 
-    # Embeddings mock - 384 dim
-    embedding_mock = [0.021, -0.118] + [0.0] * 382
+    if not APP_STATE["model_loaded"]:
+        raise HTTPException(status_code = 503, detail = "Model Not Found")
+
+    model = APP_STATE["model"]
+    encoder = APP_STATE["encoder"]
+
+    vector = encoder.encode([f"passage: {request.text}"], normalize_embeddings=True)
+    features = build_features(vector, request.text, model)
+
+    probabilities = model["classifier"].predict_proba(features)[0]
+    best = int(probabilities.argmax())
+    category = model["label_encoder"].classes_[best]
+    probability = float(probabilities[best])
+
+    explanation = _get_explanation(request.text, best, model["baseline_vectorizer"], model["baseline_classifier"])
+    keywords = _top_terms(model["keyword_vectorizer"], request.text)
+    cluster = int(model["kmeans"].predict(vector)[0])
+    x, y = model["umap_reducer"].transform(vector)[0]
 
     return {
-        "category": "Backend",
-        "probability": 0.89,
-        "keywords": ["java", "spring", "rest"],
-        "explanation": ["spring", "rest", "endpoint"],
-        "embedding": embedding_mock,
-        "cluster_id": 3,
-        "x": 4.21,
-        "y": -1.07
+        "category": category,
+        "probability": probability,
+        "keywords": keywords,
+        "explanation": explanation,
+        "embedding": vector[0].tolist(),
+        "cluster_id": cluster,
+        "x": float(x),
+        "y": float(y)
     }
 
 @app.post("/embed", response_model = EmbedResponse)
 async def embed(request: EmbedRequest):
 
-    # Embeddings mock - 384 dim
-    mock_embedding = [0.021, -0.118] + [0.0] * 382
-    
+    formatted_text = f"{request.type}: {request.text}"
+    vector = APP_STATE["encoder"].encode(formatted_text, normalize_embeddings=True)
+
     return {
-        "embedding": mock_embedding
+        "embedding": vector.tolist()
     }
+
+def _top_terms(vectorizer, text):
+
+    n = 5
+    matrix = vectorizer.transform([text]).toarray()[0]
+    keywords = vectorizer.get_feature_names_out()
+
+    index_sorted = matrix.argsort()[::-1]
+
+    results = []
+    for i in index_sorted[:n]:
+        if matrix[i] > 0:
+            results.append(keywords[i])
+            
+    return results
+
+
+def build_features(embedding: np.ndarray, text: str, model: dict) -> np.ndarray:
+    svd = model.get("svd")
+
+    if svd is None:
+        return embedding.reshape(1, -1)
+    
+    tfidf = model["baseline_vectorizer"]
+    reduced = normalize(svd.transform(tfidf.transform([text])))
+
+    return np.hstack([embedding.reshape(1, -1), reduced])
+
+
+def _get_explanation(text: str, class_idx: int, vectorizer, classifier, top_n=5):
+
+    matrix = vectorizer.transform([text]).toarray()[0]
+    coef = classifier.coef_[class_idx]
+    
+    weights = matrix * coef
+    words = vectorizer.get_feature_names_out()
+    
+    index_sorted = weights.argsort()[::-1]
+    
+    results = []
+    for i in index_sorted[:top_n]:
+        if weights[i] > 0:
+            results.append(words[i])
+    return results

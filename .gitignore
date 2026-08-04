@@ -18,6 +18,7 @@ docker-compose.override.yml
 data/raw/
 data/processed/
 models/
+model/
 
 # === Python ===
 __pycache__/

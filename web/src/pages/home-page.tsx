@@ -1,0 +1,45 @@
+import { Link } from 'react-router';
+import { useStats } from '@/features/dashboard';
+
+export function HomePage() {
+	const stats = useStats();
+
+	return (
+		<div className="stack">
+			<h1>Base de conocimiento técnica</h1>
+			<p className="muted">
+				Clasifica contenido técnico en 8 categorías, extrae palabras clave y encuentra documentos relacionados
+				semánticamente.
+			</p>
+
+			{stats.isSuccess && (
+				<div className="row">
+					<div className="card">
+						<strong>{stats.data.total}</strong>
+						<div className="muted">contenidos</div>
+					</div>
+					<div className="card">
+						<strong>{stats.data.addedThisWeek}</strong>
+						<div className="muted">esta semana</div>
+					</div>
+					<div className="card">
+						<strong>{Object.keys(stats.data.byCategory).length}</strong>
+						<div className="muted">categorías activas</div>
+					</div>
+				</div>
+			)}
+
+			<div className="row">
+				<Link className="btn btn--primary" to="/buscar">
+					Buscar
+				</Link>
+				<Link className="btn" to="/nuevo">
+					Añadir contenido
+				</Link>
+				<Link className="btn" to="/mapa">
+					Ver el mapa
+				</Link>
+			</div>
+		</div>
+	);
+}

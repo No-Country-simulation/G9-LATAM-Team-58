@@ -19,7 +19,7 @@ public class Content {
     @Column(nullable = false, length = 500)
     private String title;
 
-    @Column(nullable = false, columnDefinition = "CLOB")
+    @Column(columnDefinition = "CLOB")
     private String body;
 
     @Column(length = 50)
