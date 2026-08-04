@@ -8,6 +8,12 @@ lo resuelve la Autonomous Database con `VECTOR_DISTANCE`, orquestado por `api/`.
 
 - `model.joblib` desde OCI Object Storage, descargado al arrancar.
 
+> **Atajo de dev.** Si la env var `MODEL_LOCAL_PATH` apunta a un archivo existente
+> (por ejemplo `models/model.joblib`, copiado a mano y ya cubierto por `.gitignore`),
+> `load_model()` lo carga directo y **no** toca OCI — no hace falta `~/.oci/config`
+> para levantar el servicio en local. Sin la env var (o si el archivo no existe), el
+> flujo es el de siempre. Ver `.env.example`.
+
 ## Fronteras
 
 - Solo lo llama `api/`, nunca la web.

@@ -1,6 +1,9 @@
 # Inference service. Built natively on the ARM VM (linux/arm64); an x86 image
 # fails there with `exec format error`.
-FROM python:3.11-slim
+# El notebook entrena en Python 3.12 (Colab). Los Dispatcher de numba que UMAP
+# pickla dentro de model.joblib son sensibles al bytecode exacto de CPython:
+# con 3.11 no deserializan (IndexError en numba.core.byteflow).
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -11,8 +14,10 @@ ENV PYTHONUNBUFFERED=1 \
 COPY requirements.txt .
 
 # On aarch64 there are no CUDA wheels, so the default index already resolves to
-# the CPU build of torch. The `--index-url .../whl/cpu` rule for torch matters
-# when building on x86 (local dev, GitHub runners), not here.
+# the CPU build of torch. On x86 (local dev, GitHub runners) the default index
+# resolves to the CUDA build instead, pulling ~2GB of unused CUDA packages — so
+# torch is installed explicitly from the CPU wheel index first.
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN python -c "from sentence_transformers import SentenceTransformer; \

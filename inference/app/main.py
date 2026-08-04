@@ -1,7 +1,5 @@
-import os
 from contextlib import asynccontextmanager
 
-import joblib
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from sentence_transformers import SentenceTransformer
@@ -24,16 +22,15 @@ APP_STATE = {
     "umap": None
 }
 
- 
 @asynccontextmanager
-# Initialize joblib when service is up in an async way
 async def lifespan(app: FastAPI):
 
     artifact = load_model()
+    assert artifact["classifier"].n_features_in_ == artifact["meta"]["feature_dim"]
 
     APP_STATE["model"] = artifact
     APP_STATE["encoder"] = SentenceTransformer(artifact["meta"]["embedding_model"])
-    APP_STATE["metadata"] = artifact.get("metadata")
+    APP_STATE["meta"] = artifact["meta"]
     APP_STATE["kmeans"] = artifact.get("kmeans")
     APP_STATE["umap"] = artifact.get("umap")
     APP_STATE["model_loaded"] = True
@@ -68,27 +65,31 @@ async def get_model_info():
 @app.post("/predict", response_model = PredictResponse)
 async def predict(request: PredictRequest):
 
-    if APP_STATE["model_loaded"]:
-        model = APP_STATE["model"]
-        encoder = APP_STATE["encoder"]
-        category = model["label_encoder"].inverse_transform(model["classifier"].predict([vector]))[0]
-        explanation = _get_explanation(request.text, category, model["baseline_vectorizer"], model["baseline_classifier"])
-        vector = encoder.encode([f"passage: {request.text}"], normalize_embeddings=True)
-        probability = model["classifier"].predict_proba([vector]).max()
-        keywords = _top_terms(model["keyword_vectorizer"], request.text)
-        cluster = int(model["kmeans"].predict([vector])[0])       
-        x, y = model["umap_reducer"].transform([vector])[0] 
-    else:
-        cluster = 0 
-        x = 0.0
-        y = 0.0
+    if not APP_STATE["model_loaded"]:
+        raise HTTPException(status_code = 503, detail = "Model Not Found")
+
+    model = APP_STATE["model"]
+    encoder = APP_STATE["encoder"]
+
+    vector = encoder.encode([f"passage: {request.text}"], normalize_embeddings=True)
+    features = build_features(vector, request.text, model)
+
+    probabilities = model["classifier"].predict_proba(features)[0]
+    best = int(probabilities.argmax())
+    category = model["label_encoder"].classes_[best]
+    probability = float(probabilities[best])
+
+    explanation = _get_explanation(request.text, best, model["baseline_vectorizer"], model["baseline_classifier"])
+    keywords = _top_terms(model["keyword_vectorizer"], request.text)
+    cluster = int(model["kmeans"].predict(vector)[0])
+    x, y = model["umap_reducer"].transform(vector)[0]
 
     return {
         "category": category,
         "probability": probability,
         "keywords": keywords,
         "explanation": explanation,
-        "embedding": vector,
+        "embedding": vector[0].tolist(),
         "cluster_id": cluster,
         "x": float(x),
         "y": float(y)
