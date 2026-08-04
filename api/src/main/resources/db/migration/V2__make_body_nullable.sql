@@ -1,0 +1,1 @@
+ALTER TABLE contents MODIFY (body CLOB NULL);
