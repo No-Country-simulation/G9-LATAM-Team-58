@@ -85,7 +85,10 @@ export const mapPointSchema = z.object({
 	title: z.string(),
 	category: z.string(),
 	x: z.number(),
-	y: z.number()
+	y: z.number(),
+	// Pending on the backend (see PENDIENTES-BACK.md §1). Optional on purpose:
+	// if required, `.parse()` would throw on every response until it ships.
+	clusterId: z.number().nullish()
 });
 export const mapPointsSchema = z.array(mapPointSchema);
 
