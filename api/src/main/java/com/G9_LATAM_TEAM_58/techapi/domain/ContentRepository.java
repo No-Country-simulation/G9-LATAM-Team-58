@@ -15,6 +15,10 @@ public interface ContentRepository extends JpaRepository<Content, String> {
     // Standard JPA derived queries
     Page<Content> findAllByCategory(String category, Pageable pageable);
 
+    Page<Content> findAllByTitleContainingIgnoreCase(String q, Pageable pageable);
+
+    Page<Content> findAllByCategoryAndTitleContainingIgnoreCase(String category, String q, Pageable pageable);
+
     // Native queries for embedding + vector operations
 
     @Query(value = "SELECT embedding FROM contents WHERE id = :id", nativeQuery = true)

@@ -2,6 +2,7 @@ package com.G9_LATAM_TEAM_58.techapi.core.service.impl;
 
 import com.G9_LATAM_TEAM_58.techapi.common.exception.NotFoundException;
 import com.G9_LATAM_TEAM_58.techapi.core.dto.ContentDetail;
+import com.G9_LATAM_TEAM_58.techapi.core.dto.ContentListResponse;
 import com.G9_LATAM_TEAM_58.techapi.core.dto.ContentSummary;
 import com.G9_LATAM_TEAM_58.techapi.core.service.IContentQueryService;
 import com.G9_LATAM_TEAM_58.techapi.domain.Content;
@@ -12,8 +13,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @ConditionalOnProperty(name = "app.database.enabled", havingValue = "true")
@@ -26,7 +25,7 @@ public class ContentQueryServiceImpl implements IContentQueryService {
     }
 
     @Override
-    public List<ContentSummary> listContents(String category, String sort, int page, int size) {
+    public ContentListResponse listContents(String category, String q, String sort, int page, int size) {
         Pageable pageable;
         if ("added_at".equals(sort) || "addedAt".equals(sort)) {
             pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "addedAt"));
@@ -34,14 +33,21 @@ public class ContentQueryServiceImpl implements IContentQueryService {
             pageable = PageRequest.of(page, size);
         }
 
+        boolean hasCategory = category != null && !category.isBlank();
+        boolean hasQuery = q != null && !q.isBlank();
+
         Page<Content> contentPage;
-        if (category != null && !category.isBlank()) {
+        if (hasCategory && hasQuery) {
+            contentPage = contentRepository.findAllByCategoryAndTitleContainingIgnoreCase(category, q, pageable);
+        } else if (hasCategory) {
             contentPage = contentRepository.findAllByCategory(category, pageable);
+        } else if (hasQuery) {
+            contentPage = contentRepository.findAllByTitleContainingIgnoreCase(q, pageable);
         } else {
             contentPage = contentRepository.findAll(pageable);
         }
 
-        return contentPage.stream()
+        var items = contentPage.stream()
                 .map(c -> {
                     ContentSummary summary = new ContentSummary();
                     summary.setId(c.getId());
@@ -53,6 +59,8 @@ public class ContentQueryServiceImpl implements IContentQueryService {
                     return summary;
                 })
                 .toList();
+
+        return new ContentListResponse(contentPage.getTotalElements(), items);
     }
 
     @Override
