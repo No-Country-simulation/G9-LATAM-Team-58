@@ -1,11 +1,10 @@
 # React front served by nginx. Multi-stage: node builds the static bundle, nginx
 # serves it. Both images are multi-arch, so this builds natively on the ARM VM.
 #
-# NOTE: web/ is still just a README -- there is no package.json yet. In
-# docker-compose.yml this service sits behind `profiles: [web]`, so it does NOT
-# build until the real front lands. Drop that profile line once web/ is real.
+# node:22-slim, not 20: corepack pulls pnpm 11.x, which requires Node >=22.13
+# (uses the node:sqlite builtin). Node 20 fails with ERR_UNKNOWN_BUILTIN_MODULE.
 
-FROM node:20-slim AS build
+FROM node:22-slim AS build
 WORKDIR /build
 
 RUN corepack enable
