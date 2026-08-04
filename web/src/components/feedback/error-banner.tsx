@@ -3,17 +3,18 @@ import { Button } from '@/components/ui/button';
 import type { ApiError } from '@/shared/api/client';
 
 interface ErrorBannerProps {
+	title: string;
 	error: ApiError;
 	onRetry?: () => void;
 }
 
-export function ErrorBanner({ error, onRetry }: ErrorBannerProps) {
+export function ErrorBanner({ title, error, onRetry }: ErrorBannerProps) {
 	return (
 		<div className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-4">
 			<IconAlertCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
 			<div className="flex min-w-0 flex-1 flex-col gap-2">
 				<div>
-					<h3 className="font-heading text-sm font-semibold text-foreground">No se pudo analizar el contenido</h3>
+					<h3 className="font-heading text-sm font-semibold text-foreground">{title}</h3>
 					<p className="mt-1 text-[13px] text-muted-foreground">{error.message}</p>
 				</div>
 				<div className="flex items-center justify-between gap-3">

@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { IconArrowRight } from '@tabler/icons-react';
 import { CategoryBadge, Metric, SectionHeading } from '@/components/data-display';
+import { ErrorBanner } from '@/components/feedback/error-banner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import type { ApiError } from '@/shared/api/client';
@@ -8,7 +9,6 @@ import type { IngestionResponse } from '@/shared/api/contracts';
 import { formatProbability } from '@/shared/lib/format';
 import { ConfidenceBar } from './confidence-bar';
 import { EmptyPlaceholder } from './empty-placeholder';
-import { ErrorBanner } from './error-banner';
 import { ExplanationList } from './explanation-list';
 import { KeywordChips } from './keyword-chips';
 import { ProcessingPanel } from './processing-panel';
@@ -31,7 +31,7 @@ export function ResultPanel({ isPending, error, data, onRetry }: ResultPanelProp
 		return (
 			<Card className="flex-1">
 				<CardContent className="flex flex-1 flex-col gap-6">
-					<ErrorBanner error={error} onRetry={onRetry} />
+					<ErrorBanner title="No se pudo analizar el contenido" error={error} onRetry={onRetry} />
 					<EmptyPlaceholder description="Corrige el texto y vuelve a intentarlo." />
 				</CardContent>
 			</Card>
