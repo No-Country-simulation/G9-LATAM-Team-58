@@ -68,8 +68,8 @@
 }
 
 /*
- * Paleta TechMind. Los valores vienen del design system de Stitch
- * "TechMind Instrument" (assets/11067529216321209705), que está definido en dark;
+ * Paleta Mindloom. Los valores vienen del design system de Stitch
+ * "Mindloom Instrument" (assets/11067529216321209705), que está definido en dark;
  * el light se deriva manteniendo el mismo tono y bajando el croma.
  * Todo en oklch — no introducir hex aquí.
  */
@@ -193,3 +193,5 @@
 		@apply font-heading text-2xl font-semibold tracking-tight;
 	}
 }
+
+@import 'route-loading.css';

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AnalyzeForm, ResultPanel, useAnalyzeContent } from '@/features/analyze';
 import { Card, CardContent } from '@/components/ui/card';
+import { PageHeader } from '@/components/layout/page-header';
 
 export function AnalyzePage() {
 	const analyze = useAnalyzeContent();
@@ -15,12 +16,10 @@ export function AnalyzePage() {
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col gap-6">
-			<header className="shrink-0">
-				<h1>Analizar contenido</h1>
-				<p className="mt-1 text-sm text-muted-foreground">
-					Pega un texto técnico y el modelo lo clasificará en una de las 8 categorías.
-				</p>
-			</header>
+			<PageHeader
+				title="Analizar contenido"
+				description="Pega un texto técnico y el modelo lo clasificará en una de las 8 categorías."
+			/>
 
 			<div className="flex min-h-0 flex-1 flex-col gap-6 md:h-[calc(100dvh-11rem)] md:flex-row">
 				<Card className="flex min-h-0 flex-1 flex-col md:w-1/2">

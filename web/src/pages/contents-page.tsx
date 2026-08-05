@@ -1,4 +1,5 @@
 import { useStats } from '@/features/dashboard';
+import { PageHeader } from '@/components/layout/page-header';
 import {
 	CategoryChips,
 	ContentsPanel,
@@ -25,14 +26,10 @@ export function ContentsPage() {
 
 	return (
 		<div className="mx-auto flex w-full max-w-300 flex-col gap-6 pt-8 pb-20">
-			<header className="border-b pb-4">
-				<h1>Biblioteca</h1>
-				{stats.data && (
-					<p className="mt-1 text-sm text-muted-foreground">
-						{stats.data.total.toLocaleString('es')} documentos clasificados y vectorizados.
-					</p>
-				)}
-			</header>
+			<PageHeader
+				title="Biblioteca"
+				description={stats.data && `${stats.data.total.toLocaleString('es')} documentos clasificados y vectorizados.`}
+			/>
 
 			<div className="flex flex-col gap-4">
 				<ContentsToolbar

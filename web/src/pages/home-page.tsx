@@ -1,16 +1,16 @@
 import { Link } from 'react-router';
+import { PageHeader } from '@/components/layout/page-header';
 import { useStats } from '@/features/dashboard';
 
 export function HomePage() {
 	const stats = useStats();
 
 	return (
-		<div className="stack">
-			<h1>Base de conocimiento técnica</h1>
-			<p className="muted">
-				Clasifica contenido técnico en 8 categorías, extrae palabras clave y encuentra documentos relacionados
-				semánticamente.
-			</p>
+		<div className="flex w-full flex-col gap-6 pt-8 pb-20">
+			<PageHeader
+				title="Base de conocimiento técnica"
+				description="Clasifica contenido técnico en 8 categorías, extrae palabras clave y encuentra documentos relacionados semánticamente."
+			/>
 
 			{stats.isSuccess && (
 				<div className="row">

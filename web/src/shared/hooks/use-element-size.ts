@@ -1,17 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 interface ElementSize {
 	width: number;
 	height: number;
 }
 
-/** Tracks an element's content-box size via ResizeObserver, for canvases that need pixel dimensions up front (the map's SVG). */
+/**
+ * Tracks an element's content-box size via ResizeObserver, for canvases that
+ * need pixel dimensions up front (the map's canvas). Uses a callback ref, not
+ * a `useEffect(..., [])` on a plain ref: the element this measures can mount
+ * behind an early return (a loading state, for instance), arriving on a later
+ * render than the one where the effect ran — a callback ref fires exactly when
+ * the node attaches, whichever render that happens to be.
+ */
 export function useElementSize<T extends HTMLElement>() {
-	const ref = useRef<T>(null);
 	const [size, setSize] = useState<ElementSize>({ width: 0, height: 0 });
 
-	useEffect(() => {
-		const element = ref.current;
+	const ref = useCallback((element: T | null) => {
 		if (!element) {
 			return;
 		}
