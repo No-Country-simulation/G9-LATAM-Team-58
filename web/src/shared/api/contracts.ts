@@ -1,4 +1,4 @@
-// TypeScript mirror of docs/CONTRATOS.md §3 (public API consumed by the web).
+// TypeScript mirror of (public API consumed by the web).
 // Field names stay in English per the repo language rule; categories arrive in
 // Spanish and are rendered as-is. If a contract changes, change it here first.
 //
@@ -24,7 +24,7 @@ export interface ContentListResponse {
 export interface ContentDetail extends ContentSummary {
 	body: string;
 	// Seeded corpus rows never went through /predict, so this column is null
-	// for them (contents.probability is a nullable FLOAT, CONTRATOS §5).
+	// for them (contents.probability is a nullable FLOAT).
 	probability: number | null;
 	keywords: string[];
 	explanation: string[];

@@ -1,5 +1,5 @@
 // The contract returns plain terms (`keywords: string[]`), with no weights, so
-// the chips carry no score — see docs/CONTRATOS.md §3.4.
+// the chips carry no score
 export function KeywordChips({ keywords }: { keywords: string[] }) {
 	return (
 		<div className="flex flex-wrap gap-2">
