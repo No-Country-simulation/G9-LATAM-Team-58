@@ -1,5 +1,6 @@
 import { ErrorBanner } from '@/components/feedback/error-banner';
 import { useElementSize } from '@/shared/hooks/use-element-size';
+import { useLoadingCompletion } from '@/shared/hooks/use-loading-completion';
 import type { ApiError } from '@/shared/api/client';
 import type { MapPoint } from '@/shared/api/contracts';
 import { CategoryLegend } from './category-legend';
@@ -42,9 +43,10 @@ export function MapPanel({
 	onCloseDetail
 }: MapPanelProps) {
 	const [scatterRef, size] = useElementSize<HTMLDivElement>();
+	const loading = useLoadingCompletion({ isPending, isComplete: Boolean(points) });
 
-	if (isPending) {
-		return <MapLoading />;
+	if (loading.isVisible) {
+		return <MapLoading progress={loading.progress} />;
 	}
 
 	if (error) {

@@ -1,12 +1,9 @@
 import { IconChartScatter } from '@tabler/icons-react';
 import { SegmentedBar } from '@/components/data-display';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSimulatedProgress } from '@/shared/hooks/use-simulated-progress';
 
 /** No real progress to report from a single GET /map — cosmetic only, like the analyze pipeline. */
-export function MapLoading() {
-	const progress = useSimulatedProgress();
-
+export function MapLoading({ progress }: { progress: number }) {
 	return (
 		<div className="relative h-full w-full" aria-hidden="true">
 			<div className="absolute top-6 left-6 z-20 flex w-[260px] flex-col gap-3 rounded-lg border border-outline bg-card/80 p-4 backdrop-blur-md">
