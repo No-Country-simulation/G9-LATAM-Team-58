@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/client';
-import { searchResponseSchema, type SearchResponse } from '@/shared/api/contracts';
+import type { SearchResponse } from '@/shared/api/contracts';
 import type { SearchMode } from '@/shared/config/constants';
 
 export const DEFAULT_SEARCH_PAGE_SIZE = 10;
@@ -19,8 +19,8 @@ export async function searchContents({
 	page = 0,
 	size = DEFAULT_SEARCH_PAGE_SIZE
 }: SearchFilters): Promise<SearchResponse> {
-	const { data } = await apiClient.get('/search', {
+	const { data } = await apiClient.get<SearchResponse>('/search', {
 		params: { q: query, mode, category, page, size }
 	});
-	return searchResponseSchema.parse(data);
+	return data;
 }

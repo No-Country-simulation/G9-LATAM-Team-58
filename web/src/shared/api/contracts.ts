@@ -1,134 +1,121 @@
-import { z } from 'zod';
-
 // TypeScript mirror of docs/CONTRATOS.md §3 (public API consumed by the web).
 // Field names stay in English per the repo language rule; categories arrive in
 // Spanish and are rendered as-is. If a contract changes, change it here first.
+//
+// These are plain interfaces, not runtime-validated: the app trusts the API to
+// match this shape and does not re-check it on every response.
 
 /* ---------- Contents ---------- */
 
-export const contentSummarySchema = z.object({
-	id: z.string(),
-	title: z.string(),
-	category: z.string(),
-	source: z.string(),
-	language: z.string(),
-	addedAt: z.string()
-});
-export const contentListResponseSchema = z.object({
-	total: z.number(),
-	items: z.array(contentSummarySchema)
-});
+export interface ContentSummary {
+	id: string;
+	title: string;
+	category: string;
+	source: string;
+	language: string;
+	addedAt: string;
+}
 
-export const contentDetailSchema = contentSummarySchema.extend({
-	body: z.string(),
-	probability: z.number(),
-	keywords: z.array(z.string()),
-	explanation: z.array(z.string()),
-	url: z.string().nullable()
-});
+export interface ContentListResponse {
+	total: number;
+	items: ContentSummary[];
+}
 
-export const relatedItemSchema = z.object({
-	id: z.string(),
-	title: z.string(),
-	category: z.string(),
-	similarity: z.number()
-});
+export interface ContentDetail extends ContentSummary {
+	body: string;
+	// Seeded corpus rows never went through /predict, so this column is null
+	// for them (contents.probability is a nullable FLOAT, CONTRATOS §5).
+	probability: number | null;
+	keywords: string[];
+	explanation: string[];
+	url: string | null;
+}
 
-export const relatedContentResponseSchema = z.object({
-	id: z.string(),
-	title: z.string(),
-	related: z.array(relatedItemSchema)
-});
+export interface RelatedItem {
+	id: string;
+	title: string;
+	category: string;
+	similarity: number;
+}
+
+export interface RelatedContentResponse {
+	id: string;
+	title: string;
+	related: RelatedItem[];
+}
 
 /* ---------- Content ingestion (POST /content, 201) ---------- */
 
-export const ingestionResponseSchema = z.object({
-	id: z.string(),
-	category: z.string(),
-	probability: z.number(),
-	keywords: z.array(z.string()),
-	related: z.array(relatedItemSchema),
-	explanation: z.array(z.string())
-});
+export interface IngestionResponse {
+	id: string;
+	category: string;
+	probability: number;
+	keywords: string[];
+	related: RelatedItem[];
+	explanation: string[];
+}
 
 /* ---------- Batch upload (POST /contents/batch) ---------- */
 
-export const batchUploadResponseSchema = z.object({
-	processed: z.number(),
-	failed: z.number(),
-	ids: z.array(z.string()),
-	errors: z.array(z.object({ row: z.number(), reason: z.string() })),
-	byCategory: z.record(z.string(), z.number())
-});
+export interface BatchUploadResponse {
+	processed: number;
+	failed: number;
+	ids: string[];
+	errors: { row: number; reason: string }[];
+	byCategory: Record<string, number>;
+}
 
 /* ---------- Search (GET /search) ---------- */
 
-export const searchResultSchema = z.object({
-	id: z.string(),
-	title: z.string(),
-	category: z.string(),
-	similarity: z.number()
-});
+export interface SearchResult {
+	id: string;
+	title: string;
+	category: string;
+	similarity: number;
+}
 
-export const searchResponseSchema = z.object({
-	mode: z.string(),
+export interface SearchResponse {
+	mode: string;
 	// WARNING: `total` is the page size, not the overall hit count (contract §3.6).
-	total: z.number(),
-	elapsedMs: z.number(),
-	results: z.array(searchResultSchema)
-});
+	total: number;
+	elapsedMs: number;
+	results: SearchResult[];
+}
 
 /* ---------- Map (GET /map) ---------- */
 
-export const mapPointSchema = z.object({
-	id: z.string(),
-	title: z.string(),
-	category: z.string(),
-	x: z.number(),
-	y: z.number(),
-	// Pending on the backend (see PENDIENTES-BACK.md §1). Optional on purpose:
-	// if required, `.parse()` would throw on every response until it ships.
-	clusterId: z.number().nullish()
-});
-export const mapPointsSchema = z.array(mapPointSchema);
+export interface MapPoint {
+	id: string;
+	title: string;
+	category: string;
+	x: number;
+	y: number;
+	// Pending on the backend (see PENDIENTES-BACK.md §1).
+	clusterId?: number | null;
+}
 
 /* ---------- Stats (GET /stats) ---------- */
 
-export const statsResponseSchema = z.object({
-	total: z.number(),
+export interface StatsResponse {
+	total: number;
 	// Only categories with at least one row appear; treat missing keys as 0.
-	byCategory: z.record(z.string(), z.number()),
-	addedThisWeek: z.number()
-});
+	byCategory: Record<string, number>;
+	addedThisWeek: number;
+}
 
 /* ---------- Model (GET /model) ---------- */
 
-export const modelResponseSchema = z.object({
-	version: z.string(),
-	embeddingModel: z.string(),
-	dim: z.number(),
-	macroF1: z.number()
-});
+export interface ModelResponse {
+	version: string;
+	embeddingModel: string;
+	dim: number;
+	macroF1: number;
+}
 
 /* ---------- Error envelope (GlobalExceptionHandler) ---------- */
 
-export const apiErrorResponseSchema = z.object({
-	error: z.string(),
-	message: z.string(),
-	timestamp: z.string().optional()
-});
-
-/* ---------- Inferred types ---------- */
-
-export type ContentSummary = z.infer<typeof contentSummarySchema>;
-export type ContentListResponse = z.infer<typeof contentListResponseSchema>;
-export type ContentDetail = z.infer<typeof contentDetailSchema>;
-export type RelatedItem = z.infer<typeof relatedItemSchema>;
-export type RelatedContentResponse = z.infer<typeof relatedContentResponseSchema>;
-export type IngestionResponse = z.infer<typeof ingestionResponseSchema>;
-export type BatchUploadResponse = z.infer<typeof batchUploadResponseSchema>;
-export type SearchResult = z.infer<typeof searchResultSchema>;
-export type SearchResponse = z.infer<typeof searchResponseSchema>;
-export type MapPoint = z.infer<typeof mapPointSchema>;
-export type StatsResponse = z.infer<typeof statsResponseSchema>;
-export type ModelResponse = z.infer<typeof modelResponseSchema>;
+export interface ApiErrorResponse {
+	error: string;
+	message: string;
+	timestamp?: string;
+}
