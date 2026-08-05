@@ -76,7 +76,7 @@ export interface SearchResult {
 
 export interface SearchResponse {
 	mode: string;
-	// WARNING: `total` is the page size, not the overall hit count (contract §3.6).
+	// WARNING: `total` is the page size, not the overall hit count.
 	total: number;
 	elapsedMs: number;
 	results: SearchResult[];
@@ -90,7 +90,8 @@ export interface MapPoint {
 	category: string;
 	x: number;
 	y: number;
-	// Pending on the backend (see PENDIENTES-BACK.md §1).
+	// Optional: the backend does not expose clusters yet, so this stays
+	// undefined until it does.
 	clusterId?: number | null;
 }
 

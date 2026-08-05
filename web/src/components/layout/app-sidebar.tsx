@@ -47,13 +47,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 					<SidebarMenuItem>
 						<SidebarMenuButton size="lg" asChild>
 							<NavLink to="/" className="flex items-center gap-3">
-								{/* Contenedor del icono un poco más amplio (size-9 = 36px) */}
 								<div className="flex aspect-square size-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
-									{/* Icono escalado a size-5 (20px) o size-6 (24px) */}
 									<BrandMark className="size-5 shrink-0" />
 								</div>
 
-								{/* Texto del logo */}
 								<div className="grid flex-1 text-left text-sm leading-tight">
 									<span className="truncate font-heading text-base font-semibold">Mindloom</span>
 									<span className="truncate text-xs text-muted-foreground">Organización inteligente</span>

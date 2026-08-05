@@ -9,7 +9,7 @@ interface SearchPaginationProps {
 
 /**
  * `total` in the search response is the page size, not the overall hit
- * count (contract §3.6), so there is no way to render numbered pages —
+ * count, so there is no way to render numbered pages —
  * "Siguiente" only enables when the current page is full.
  */
 export function SearchPagination({ page, canGoNext, onPageChange }: SearchPaginationProps) {

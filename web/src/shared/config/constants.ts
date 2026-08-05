@@ -1,5 +1,5 @@
 // The 8 categories are domain values and arrive from the API in Spanish.
-// The API never returns this list (contract §3.9), so the front keeps it here.
+// The API never returns this list, so the front keeps it here.
 export const CATEGORIES = [
 	'Backend',
 	'Frontend',
