@@ -1,15 +1,30 @@
 # data/
 
-Construcción del corpus: extracción, limpieza y etiquetado. No se despliega.
+Construcción del corpus de Mindloom: extracción, limpieza y etiquetado. No se
+despliega.
 
 Notebook de entrega: [`TechMind_01_EDA_ETL.ipynb`](TechMind_01_EDA_ETL.ipynb).
 
-## Consume
+## Requisitos
+
+- Python, ejecutado en Google Colab.
+- Credenciales de Kaggle, en Colab Secrets — el notebook de EDA/ETL no lee
+  ningún `.env`.
+
+## Uso
+
+Abrir el notebook de entrega en Colab y ejecutarlo de arriba a abajo. Sube los
+tres ficheros de `processed/` al bucket de Object Storage.
+
+Cargar ese corpus en la base de datos es un paso aparte, con otro ciclo de vida
+y otras credenciales: ver [`scripts/`](../scripts/README.md).
+
+## Fuentes
 
 - **Kaggle StackSample** (`stackoverflow/stacksample`) — preguntas de Stack Overflow
   en inglés, etiquetadas por votación ponderada de tags.
 - **API de Dev.to** — artículos técnicos en inglés y en español. Es el registro que
-  más se parece al contenido que TechMind indexa.
+  más se parece al contenido que Mindloom indexa.
 - **Volcados de Stack Exchange** (archive.org) — `es.stackoverflow.com` aporta
   español; `security`, `dba` y `softwareengineering` aportan las categorías con
   menos muestra, con el sitio como etiqueta.
@@ -34,7 +49,7 @@ Notebook de entrega: [`TechMind_01_EDA_ETL.ipynb`](TechMind_01_EDA_ETL.ipynb).
   un campo **interno del ETL**: alimenta el muestreo ponderado del balanceo y no se
   persiste en la tabla `contents`.
 
-## Fronteras
+## Contratos y fronteras
 
 - Categoría: **una sola** de las 8 — Backend · Frontend · Móvil · Datos e IA ·
   DevOps y Cloud · Bases de datos · Seguridad · Fundamentos. La rúbrica de etiquetado
@@ -43,3 +58,6 @@ Notebook de entrega: [`TechMind_01_EDA_ETL.ipynb`](TechMind_01_EDA_ETL.ipynb).
   No son decorativos: son columnas de la tabla `contents` en la Autonomous Database,
   y el corpus es la única fuente que puede emitirlos.
 - `random_state=42` en cada muestreo y en el split estratificado.
+
+---
+← [README principal](../README.md) · [Cómo contribuir](../CONTRIBUTING.md)
