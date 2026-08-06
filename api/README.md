@@ -28,6 +28,7 @@ toca la base.
   - [`GET /model`](#get-model--estado-del-modelo-sidebar)
   - [`POST /contents/batch`](#post-contentsbatch--carga-por-lotes)
   - [`POST /admin/seed`](#post-adminseed--carga-masiva-de-corpus)
+  - [`GET /health`](#get-health--estado-de-la-api-y-sus-dependencias)
 
 ## Requisitos
 
@@ -74,9 +75,22 @@ Sirve en `http://localhost:8080`. El catálogo completo de rutas está en
 
 ## Pruebas
 
+Dos categorías de tests, con JUnit 5 y `@Tag`:
+
+| Categoría | Qué prueba | Cómo se corre |
+|---|---|---|
+| **Unit** (`src/test/.../unit/`) | cada controller con `@WebMvcTest` y servicios mockeados — sin base de datos | `./mvnw test` |
+| **Integración** (`src/test/.../integration/`) | contra la Autonomous Database real y `inference/` (perfil `db`) | exportar el `.env` y `./mvnw test -DexcludedGroups=` |
+
+Por defecto Surefire excluye el tag `integration`, así que `./mvnw test` (p. ej. en CI)
+corre solo los unitarios y no toca la base. Para correrlo todo:
+
 ```bash
-./mvnw test
+export $(grep -v '^#' .env | xargs)   # o exportar las variables a mano
+./mvnw test -DexcludedGroups=
 ```
+
+Solo integración: `./mvnw test -Dgroups=integration` (con las variables exportadas).
 
 ## Estructura
 
@@ -106,6 +120,11 @@ Migraciones de esquema en `src/main/resources/db/migration/` (Flyway).
   ```
 
   Códigos: `VALIDATION_ERROR` (400), `NOT_FOUND` (404), `INTERNAL_ERROR` (500).
+
+- **Auditoría:** cada request se registra en el log de la API
+  (`→ GET /contents from 127.0.0.1` / `← GET /contents -> 200 (12 ms) from 127.0.0.1`),
+  y cada llamada saliente a `inference/` deja su traza (endpoint, status, duración).
+  Los fallos se loguean una sola vez, en el `GlobalExceptionHandler`, con su stacktrace.
 
 ## Referencia de la API
 
@@ -461,6 +480,40 @@ valores.
 > rutas: [`scripts/README.md`](../scripts/README.md#las-dos-rutas-que-escriben-contents-y-en-qué-se-diferencian).
 
 **Errores:** `503` si `app.database.enabled` no está activo (perfil `db`).
+
+### `GET /health` — estado de la API y sus dependencias
+
+Sondeo de salud para orquestador/CI: responde **siempre `200 OK`** y reporta si
+`inference/` y la base de datos están alcanzables. No aparece en Swagger
+(oculto con `@Hidden`) — este es su único contrato.
+
+**Recibe:** nada.
+
+**Devuelve** `200 OK`:
+
+```json
+{
+  "status": "UP",
+  "timestamp": "2026-08-06T02:00:00Z",
+  "dependencies": [
+    { "name": "inference", "enabled": true, "reachable": true, "latencyMs": 154, "message": null },
+    { "name": "database", "enabled": true, "reachable": true, "latencyMs": 308, "message": null }
+  ]
+}
+```
+
+| Campo | Tipo | Qué es |
+|---|---|---|
+| `status` | `UP` \| `DEGRADED` | `UP` ⇔ inference alcanzable ∧ (base alcanzable ∨ base no configurada) |
+| `dependencies[].enabled` | bool | si la dependencia está configurada en este perfil |
+| `dependencies[].reachable` | bool | si responde a su sondeo |
+| `dependencies[].latencyMs` | long | duración del sondeo |
+| `dependencies[].message` | string \| null | motivo, cuando no está `enabled` o falló el sondeo |
+
+> En modo scaffold (`app.database.enabled=false`) la base figura `enabled=false`
+> y la API sigue `UP` si inference responde. En perfil `db` la base se sondea con
+> `SELECT 1 FROM DUAL`. Cada sondeo tiene timeout de 3 s: si una dependencia no
+> responde a tiempo, se marca `reachable=false` sin tumbar el endpoint.
 
 ---
 ← [README principal](../README.md) · [Cómo contribuir](../CONTRIBUTING.md)
