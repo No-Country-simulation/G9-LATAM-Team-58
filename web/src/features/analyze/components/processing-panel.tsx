@@ -1,12 +1,10 @@
 import { SectionHeading, SegmentedBar } from '@/components/data-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { useElapsedSeconds } from '@/shared/hooks/use-elapsed-seconds';
-import { useSimulatedProgress } from '@/shared/hooks/use-simulated-progress';
 import { INFERENCE_PIPELINE } from '../pipeline';
 import { InferencePipeline } from './inference-pipeline';
 
-export function ProcessingPanel() {
-	const progress = useSimulatedProgress();
+export function ProcessingPanel({ progress }: { progress: number }) {
 	const elapsed = useElapsedSeconds();
 
 	return (

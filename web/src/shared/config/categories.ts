@@ -30,3 +30,12 @@ export function categoryStyle(category: string): CSSProperties {
 	const variable = CATEGORY_COLOR_VAR[category as Category] ?? FALLBACK_COLOR_VAR;
 	return { '--cat': `var(${variable})` } as CSSProperties;
 }
+
+/**
+ * The raw CSS variable name for a category's colour. For contexts that can't
+ * consume `var(...)` at all — Canvas `fillStyle` needs a resolved colour string,
+ * read via `getComputedStyle` — not for anything that renders as DOM/CSS.
+ */
+export function categoryColorVar(category: string): string {
+	return CATEGORY_COLOR_VAR[category as Category] ?? FALLBACK_COLOR_VAR;
+}

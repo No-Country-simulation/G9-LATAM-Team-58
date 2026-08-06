@@ -1,7 +1,5 @@
-import { IconPlus } from '@tabler/icons-react';
-import { Link } from 'react-router';
-import { Button } from '@/components/ui/button';
 import { useStats } from '@/features/dashboard';
+import { PageHeader } from '@/components/layout/page-header';
 import {
 	CategoryChips,
 	ContentsPanel,
@@ -28,22 +26,10 @@ export function ContentsPage() {
 
 	return (
 		<div className="mx-auto flex w-full max-w-300 flex-col gap-6 pt-8 pb-20">
-			<header className="flex items-end justify-between gap-4 border-b pb-4">
-				<div>
-					<h1>Biblioteca</h1>
-					{stats.data && (
-						<p className="mt-1 text-sm text-muted-foreground">
-							{stats.data.total.toLocaleString('es')} documentos clasificados y vectorizados.
-						</p>
-					)}
-				</div>
-				<Button asChild data-icon="inline-start">
-					<Link to="/nuevo">
-						<IconPlus />
-						Nuevo contenido
-					</Link>
-				</Button>
-			</header>
+			<PageHeader
+				title="Biblioteca"
+				description={stats.data && `${stats.data.total.toLocaleString('es')} documentos clasificados y vectorizados.`}
+			/>
 
 			<div className="flex flex-col gap-4">
 				<ContentsToolbar

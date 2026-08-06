@@ -8,9 +8,15 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.pnpm-store/
 dist
 dist-ssr
 *.local
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
 
 # Local opencode config: contains the Stitch MCP API key in plain text
 opencode.json

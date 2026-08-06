@@ -1,12 +1,5 @@
 import { apiClient } from '@/shared/api/client';
-import {
-	contentDetailSchema,
-	contentListResponseSchema,
-	relatedContentResponseSchema,
-	type ContentDetail,
-	type ContentListResponse,
-	type RelatedContentResponse
-} from '@/shared/api/contracts';
+import type { ContentDetail, ContentListResponse, RelatedContentResponse } from '@/shared/api/contracts';
 
 // The API only sorts when sort is exactly 'added_at' or 'addedAt' (DESC);
 // anything else means unordered.
@@ -29,20 +22,20 @@ export async function getContents({
 	page = 0,
 	size = DEFAULT_CONTENTS_PAGE_SIZE
 }: ContentsFilter = {}): Promise<ContentListResponse> {
-	const { data } = await apiClient.get('/contents', {
+	const { data } = await apiClient.get<ContentListResponse>('/contents', {
 		params: { category, q, sort, page, size }
 	});
-	return contentListResponseSchema.parse(data);
+	return data;
 }
 
 export async function getContent(id: string): Promise<ContentDetail> {
-	const { data } = await apiClient.get(`/contents/${id}`);
-	return contentDetailSchema.parse(data);
+	const { data } = await apiClient.get<ContentDetail>(`/contents/${id}`);
+	return data;
 }
 
 export async function getRelatedContents(id: string, limit = 5): Promise<RelatedContentResponse> {
-	const { data } = await apiClient.get(`/contents/${id}/related`, {
+	const { data } = await apiClient.get<RelatedContentResponse>(`/contents/${id}/related`, {
 		params: { limit }
 	});
-	return relatedContentResponseSchema.parse(data);
+	return data;
 }

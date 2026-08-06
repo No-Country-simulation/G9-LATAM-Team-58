@@ -1,6 +1,15 @@
 import axios, { AxiosError } from 'axios';
 import { env } from '@/shared/config/env';
-import { apiErrorResponseSchema } from './contracts';
+import type { ApiErrorResponse } from './contracts';
+
+function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
+	return (
+		typeof value === 'object' &&
+		value !== null &&
+		typeof (value as ApiErrorResponse).error === 'string' &&
+		typeof (value as ApiErrorResponse).message === 'string'
+	);
+}
 
 // Normalized error the whole app can switch on. `code` is the English error
 // code from the contract (VALIDATION_ERROR, NOT_FOUND...); `message` is the
@@ -27,10 +36,9 @@ apiClient.interceptors.response.use(
 	response => response,
 	(error: AxiosError) => {
 		if (error.response) {
-			const parsed = apiErrorResponseSchema.safeParse(error.response.data);
 			const status = error.response.status;
-			if (parsed.success) {
-				return Promise.reject(new ApiError(parsed.data.error, parsed.data.message, status));
+			if (isApiErrorResponse(error.response.data)) {
+				return Promise.reject(new ApiError(error.response.data.error, error.response.data.message, status));
 			}
 			return Promise.reject(new ApiError('UNKNOWN_ERROR', `Error inesperado del servidor (${status}).`, status));
 		}

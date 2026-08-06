@@ -14,6 +14,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import type { ApiError } from '@/shared/api/client';
 import type { IngestionResponse } from '@/shared/api/contracts';
 import { formatProbability } from '@/shared/lib/format';
+import { useLoadingCompletion } from '@/shared/hooks/use-loading-completion';
 import { EmptyPlaceholder } from './empty-placeholder';
 import { ExplanationList } from './explanation-list';
 import { ProcessingPanel } from './processing-panel';
@@ -27,8 +28,10 @@ interface ResultPanelProps {
 
 /** Routes the four states of the right-hand column; each one owns its layout. */
 export function ResultPanel({ isPending, error, data, onRetry }: ResultPanelProps) {
-	if (isPending) {
-		return <ProcessingPanel />;
+	const loading = useLoadingCompletion({ isPending, isComplete: Boolean(data) });
+
+	if (loading.isVisible) {
+		return <ProcessingPanel progress={loading.progress} />;
 	}
 
 	if (error) {

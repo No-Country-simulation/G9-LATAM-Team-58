@@ -8,7 +8,7 @@ export function formatDateTime(iso: string): string {
 	return Number.isNaN(date.getTime()) ? iso : dateTimeFormatter.format(date);
 }
 
-// `similarity` is 1 - cosine distance: 1.0 means identical (contract §3.3).
+/** `similarity` is 1 - cosine distance: 1.0 means identical. */
 export function formatSimilarity(similarity: number): string {
 	return `${Math.round(similarity * 100)}%`;
 }
