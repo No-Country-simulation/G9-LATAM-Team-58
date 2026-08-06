@@ -8,4 +8,5 @@ public interface IInferenceClient {
     PredictResponse predict(String text);
     EmbedResponse embed(String text, String type);
     ModelInfoResponse getModelInfo();
+    boolean isReachable();
 }
