@@ -26,15 +26,15 @@ public class RelatedContentServiceImpl implements IRelatedContentService {
         Content base = contentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Contenido no encontrado: " + id));
 
-        // Get embedding from DB
-        byte[] embedding = contentRepository.findEmbeddingById(id);
-        if (embedding == null) {
+        // VECTOR_SERIALIZE returns the embedding as a string literal like [1.0, 2.0, ...]
+        String embeddingString = contentRepository.findEmbeddingById(id);
+        if (embeddingString == null) {
             throw new NotFoundException("El contenido no tiene vector de embedding asociado: " + id);
         }
 
         int effectiveLimit = Math.min(Math.max(limit, 1), 50);
 
-        List<Object[]> rows = contentRepository.findRelatedContents(embedding, id, effectiveLimit);
+        List<Object[]> rows = contentRepository.findRelatedContents(embeddingString, id, effectiveLimit);
         List<SearchResult> related = rows.stream()
                 .map(row -> {
                     SearchResult sr = new SearchResult();
