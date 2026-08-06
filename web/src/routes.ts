@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router';
 import { AppLayout } from '@/components/layout/app-layout';
-import { RouteFallback } from '@/components/layout/route-fallback';
+import { RouteLoadingScreen } from '@/components/layout/route-loading';
 
 // React Router data mode: the route tree is data, pages stay thin.
 // Every page is loaded on demand so the entry chunk only carries the shell and
@@ -9,7 +9,7 @@ export const router = createBrowserRouter([
 	{
 		path: '/',
 		Component: AppLayout,
-		HydrateFallback: RouteFallback,
+		HydrateFallback: RouteLoadingScreen,
 		children: [
 			{
 				index: true,
@@ -30,10 +30,6 @@ export const router = createBrowserRouter([
 			{
 				path: 'contenidos/:id',
 				lazy: async () => ({ Component: (await import('@/pages/content-detail-page')).ContentDetailPage })
-			},
-			{
-				path: 'nuevo',
-				lazy: async () => ({ Component: (await import('@/pages/new-content-page')).NewContentPage })
 			},
 			{
 				path: 'lote',

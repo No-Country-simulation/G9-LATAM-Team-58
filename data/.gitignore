@@ -1,0 +1,19 @@
+# Corpus output -- lives on the OCI bucket, never in the repo.
+raw/
+processed/
+*.jsonl
+*.csv
+
+# Scratch notebooks: unreviewed copies.
+* copy.ipynb
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

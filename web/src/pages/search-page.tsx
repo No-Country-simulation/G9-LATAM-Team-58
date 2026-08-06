@@ -1,5 +1,6 @@
 import { useStats } from '@/features/dashboard';
 import { SearchBar, SearchFilters, SearchResults, useSearch, useSearchParamsState } from '@/features/search';
+import { PageHeader } from '@/components/layout/page-header';
 import { useDebounce } from '@/shared/hooks/use-debounce';
 
 export function SearchPage() {
@@ -17,15 +18,18 @@ export function SearchPage() {
 
 	return (
 		<div className="mx-auto flex w-full max-w-[900px] flex-col gap-6 pt-8 pb-20">
-			<header className="flex flex-col items-center gap-2 text-center">
-				<h1>Buscar en la base de conocimiento</h1>
-				{stats.data && (
-					<p className="text-sm text-muted-foreground">
-						Búsqueda semántica sobre <span className="font-mono text-foreground tabular-nums">{stats.data.total}</span>{' '}
-						documentos vectorizados.
-					</p>
-				)}
-			</header>
+			<PageHeader
+				title="Buscar en la base de conocimiento"
+				description={
+					stats.data && (
+						<>
+							Búsqueda semántica sobre{' '}
+							<span className="font-mono text-foreground tabular-nums">{stats.data.total}</span> documentos
+							vectorizados.
+						</>
+					)
+				}
+			/>
 
 			<SearchBar
 				value={params.query}

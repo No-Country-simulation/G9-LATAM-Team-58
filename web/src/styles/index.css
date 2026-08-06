@@ -68,10 +68,10 @@
 }
 
 /*
- * Paleta TechMind. Los valores vienen del design system de Stitch
- * "TechMind Instrument" (assets/11067529216321209705), que está definido en dark;
- * el light se deriva manteniendo el mismo tono y bajando el croma.
- * Todo en oklch — no introducir hex aquí.
+ * Mindloom palette. Values come from the Stitch design system
+ * "Mindloom Instrument" (assets/11067529216321209705), which is defined in dark;
+ * light is derived by keeping the same hue and lowering chroma.
+ * Everything in oklch — do not introduce hex here.
  */
 :root {
 	--background: oklch(0.979 0.003 264.5);
@@ -94,7 +94,7 @@
 	--border: oklch(0.924 0.009 264.5);
 	--input: oklch(0.924 0.009 264.5);
 	--ring: oklch(0.526 0.199 268);
-	/* Bordes de elementos interactivos y texto técnico tenue (no existen en shadcn). */
+	/* Interactive-edge borders and faint technical text (no shadcn equivalent). */
 	--outline: oklch(0.924 0.009 264.5);
 	--text-dim: oklch(0.551 0.023 264.4);
 	--chart-1: oklch(0.809 0.105 251.813);
@@ -111,7 +111,7 @@
 	--sidebar-accent-foreground: oklch(0.224 0.006 236.8);
 	--sidebar-border: oklch(0.924 0.009 264.5);
 	--sidebar-ring: oklch(0.526 0.199 268);
-	/* Las 8 categorías. Solo para pills, dots y barras: nunca como fondo de panel. */
+	/* The 8 categories. Only for pills, dots and bars: never as a panel background. */
 	--cat-backend: oklch(0.526 0.199 268);
 	--cat-frontend: oklch(0.644 0.192 41.7);
 	--cat-movil: oklch(0.529 0.11 164.7);
@@ -193,3 +193,5 @@
 		@apply font-heading text-2xl font-semibold tracking-tight;
 	}
 }
+
+@import 'route-loading.css';

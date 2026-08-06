@@ -7,7 +7,7 @@ import { dashboardKeys } from '@/features/dashboard';
 import { uploadBatch } from './api';
 
 // NOTE: the endpoint returns 200 even with per-row failures — read `failed`
-// and `errors` from the response, never the HTTP status (contract §3.5).
+// and `errors` from the response, never the HTTP status.
 export function useBatchUpload() {
 	const queryClient = useQueryClient();
 

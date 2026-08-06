@@ -1,4 +1,4 @@
-# === Hard rules: never commit models, datasets or secrets ===
+# === Hard rules: never commit models, datasets or secrets, anywhere in the repo ===
 *.joblib
 *.jsonl
 *.csv
@@ -10,36 +10,18 @@
 wallet/
 *_wallet.zip
 
+# Model artifacts and corpus index (local mirrors). They live on the OCI bucket
+# and the Autonomous Database — never commit them.
+model/
+models/
+processed/
+
 # Local-only compose override (publishes inference:8000 for dev). Never on the VM.
 docker-compose.override.yml
 
-# Data buckets / build outputs (local mirrors). The real corpus and the model
-# live on the OCI bucket — never commit them.
-data/raw/
-data/processed/
-models/
-model/
-
-# === Python ===
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-.ipynb_checkpoints/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-# === Java / Maven ===
-api/target/
-*.class
-.mvn/wrapper/maven-wrapper.jar
-
-# === Node / web ===
+# === Root-level runtime / tooling ===
 node_modules/
-web/dist/
 *.log
-.pnpm-store/
 
 # === IDE / OS ===
 .idea/

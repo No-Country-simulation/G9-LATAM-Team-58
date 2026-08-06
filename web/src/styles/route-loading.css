@@ -1,0 +1,93 @@
+/* Route loading design tokens and animations. */
+:root {
+	--route-loading-line: oklch(0.591 0.204 268.4 / 0.35);
+	--route-loading-glow: radial-gradient(
+		circle,
+		oklch(0.591 0.204 268.4 / 0.15) 0%,
+		oklch(0.591 0.204 268.4 / 0.04) 45%,
+		transparent 70%
+	);
+	--route-loading-stream: linear-gradient(90deg, transparent 0%, oklch(0.591 0.204 268.4 / 0.9) 50%, transparent 100%);
+}
+
+@utility bg-glow {
+	background-image: var(--route-loading-glow);
+}
+
+@utility bg-stream {
+	background-image: var(--route-loading-stream);
+}
+
+@utility bg-track {
+	background-color: oklch(1 0 0 / 0.08);
+}
+
+@utility stroke-loading-line {
+	stroke: var(--route-loading-line);
+}
+
+@utility fill-loading-accent {
+	fill: var(--primary);
+}
+
+@keyframes text-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes stream {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(300%);
+	}
+}
+
+@keyframes loading-flicker {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.45;
+	}
+}
+
+@keyframes card-snap {
+	0% {
+		opacity: 0;
+		transform: translateX(-14px) scaleX(0.86);
+	}
+	55% {
+		opacity: 1;
+		transform: translateX(2px) scaleX(1.02);
+	}
+	100% {
+		opacity: 1;
+		transform: translateX(0) scaleX(1);
+	}
+}
+
+@utility animate-text-in {
+	animation: text-in 0.9s ease-out both;
+	animation-delay: 0.2s;
+}
+
+@utility animate-stream {
+	animation: stream 1.6s linear infinite;
+}
+
+@utility animate-loading-flicker {
+	animation: loading-flicker 1.6s ease-in-out infinite;
+}
+
+@utility animate-card-snap {
+	animation: card-snap 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}

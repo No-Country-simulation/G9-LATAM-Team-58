@@ -1,4 +1,4 @@
-import { IconBrain } from '@tabler/icons-react';
+import { BrandMark } from '@/components/brand';
 import { NavLink, useLocation } from 'react-router';
 import { NAV_GROUPS, type NavItem } from '@/shared/config/navigation';
 import {
@@ -46,11 +46,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton size="lg" asChild>
-							<NavLink to="/">
-								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-									<IconBrain className="size-4" />
+							<NavLink to="/" className="flex items-center gap-3">
+								<div className="flex aspect-square size-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
+									<BrandMark className="size-5 shrink-0" />
 								</div>
-								<span className="font-heading text-base font-semibold">TechMind</span>
+
+								<div className="grid flex-1 text-left text-sm leading-tight">
+									<span className="truncate font-heading text-base font-semibold">Mindloom</span>
+									<span className="truncate text-xs text-muted-foreground">Organización inteligente</span>
+								</div>
 							</NavLink>
 						</SidebarMenuButton>
 					</SidebarMenuItem>

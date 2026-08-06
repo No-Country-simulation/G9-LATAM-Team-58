@@ -59,8 +59,8 @@ public class CorpusBatchProcessor {
                 contentRepository.save(content);
                 contentRepository.flush();
 
-                byte[] embeddingBytes = VectorUtils.toBytes(doc.getEmbedding());
-                jdbcTemplate.update("UPDATE contents SET embedding = ? WHERE id = ?", embeddingBytes, doc.getId());
+                String embeddingString = VectorUtils.toVectorString(doc.getEmbedding());
+                jdbcTemplate.update("UPDATE contents SET embedding = TO_VECTOR(?, 384, FLOAT32) WHERE id = ?", embeddingString, doc.getId());
 
                 allIds.add(doc.getId());
             } catch (Exception e) {

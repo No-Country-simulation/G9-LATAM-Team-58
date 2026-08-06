@@ -1,4 +1,5 @@
 export { CategoryBadge } from './category-badge';
+export { CategoryBars } from './category-bars';
 export { CategoryDot } from './category-dot';
 export { ConfidenceBar } from './confidence-bar';
 export { EmptyState } from './empty-state';

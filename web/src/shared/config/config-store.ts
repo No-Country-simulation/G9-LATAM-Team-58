@@ -9,7 +9,7 @@ export type ThemePreference = 'light' | 'dark' | 'system';
  * KEEP IN SYNC with the inline script in index.html, which reads this same key
  * before the first paint and cannot import TypeScript.
  */
-export const CONFIG_STORAGE_KEY = 'techmind.config';
+export const CONFIG_STORAGE_KEY = 'mindloom.config';
 
 export const DEFAULT_THEME: ThemePreference = 'dark';
 

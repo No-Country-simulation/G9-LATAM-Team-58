@@ -30,14 +30,14 @@ public class SemanticSearchServiceImpl implements ISemanticSearchService {
         long start = System.currentTimeMillis();
 
         EmbedResponse embedding = inferenceClient.embed(q, "query");
-        byte[] queryBytes = VectorUtils.toBytes(embedding.getEmbedding());
+        String queryEmbeddingString = VectorUtils.toVectorString(embedding.getEmbedding());
         int offset = page * size;
 
         List<Object[]> rows;
         if (category != null && !category.isBlank()) {
-            rows = contentRepository.semanticSearchWithCategory(queryBytes, category, offset, size);
+            rows = contentRepository.semanticSearchWithCategory(queryEmbeddingString, category, offset, size);
         } else {
-            rows = contentRepository.semanticSearch(queryBytes, offset, size);
+            rows = contentRepository.semanticSearch(queryEmbeddingString, offset, size);
         }
 
         List<SearchResult> results = rows.stream()

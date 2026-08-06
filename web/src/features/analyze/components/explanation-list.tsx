@@ -1,4 +1,4 @@
-// The API returns `explanation` as plain terms (contract §3.4), not weighted
+// The API returns `explanation` as plain terms, not weighted
 // features. The design mocks show a probability distribution here; until the
 // contract exposes one, this renders the terms with the same row rhythm — no
 // invented bars or weights.

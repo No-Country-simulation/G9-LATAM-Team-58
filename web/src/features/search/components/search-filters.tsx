@@ -13,7 +13,7 @@ const ALL_CATEGORIES = 'all';
 
 /**
  * In keyword mode the backend concatenates the category to the query text
- * instead of filtering by column (contract §3.6), so it narrows results
+ * instead of filtering by column, so it narrows results
  * rather than strictly filtering them. The select stays enabled either way —
  * hiding it would be more surprising than the imprecise match.
  */

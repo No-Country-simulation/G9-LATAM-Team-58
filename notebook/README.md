@@ -1,15 +1,26 @@
 # notebook/
 
-Entrenamiento, evaluación y empaquetado del modelo; serializa los artefactos.
-**No se despliega** (corre en Jupyter/Colab).
+Entrenamiento, evaluación y empaquetado del modelo de Mindloom; serializa los
+artefactos. **No se despliega** (corre en Jupyter/Colab).
 
 Notebook de entrega:
 [`TechMind_02_Model_Training.ipynb`](TechMind_02_Model_Training.ipynb).
 
-## Consume
+## Requisitos
 
-- Corpus `processed/*.jsonl` (train, test en inglés, test en español) desde el bucket
-  de Object Storage.
+- Python, ejecutado en Google Colab (o Jupyter local con GPU/CPU equivalente).
+- Corpus `processed/*.jsonl` (train, test en inglés, test en español) ya
+  publicado en el bucket de Object Storage por [`data/`](../data/).
+
+## Uso
+
+Abrir el notebook de entrega en Colab y ejecutarlo de arriba a abajo. Las
+credenciales de Object Storage se leen de Colab Secrets, no de un `.env`.
+
+## Configuración
+
+`random_state=42` en cada split, modelo y llamada a UMAP — sin fijarlo, dos
+ejecuciones del mismo código dan métricas distintas.
 
 ## Expone
 
@@ -48,7 +59,7 @@ El puntero `latest.txt` se sube el último: si apuntara a una versión cuyos fic
 aún se están subiendo, un servicio que arranque en ese intervalo cargaría algo que
 todavía no existe.
 
-## Fronteras
+## Contratos y fronteras
 
 - Los vectores del corpus **no van dentro del `.joblib`**: viven en la base de datos,
   que es donde crece el contenido. El `.joblib` solo se regenera al reentrenar.
@@ -56,3 +67,6 @@ todavía no existe.
   `inference/` lo hornea al construirse.
 - Prefijos E5 (`passage:` para contenido, `query:` para consultas), embeddings
   L2-normalizados float32, `random_state=42`, métrica macro-F1.
+
+---
+← [README principal](../README.md) · [Cómo contribuir](../CONTRIBUTING.md)

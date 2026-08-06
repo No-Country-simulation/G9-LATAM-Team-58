@@ -1,7 +1,7 @@
 name: CI
 
 # Lint + tests on the 4 fronts. Path filters keep each front's job from
-# running when unrelated folders change. See docs/TECHMIND.md section 7.
+# running when unrelated folders change.
 on:
   pull_request:
     branches: [dev, main]
@@ -57,7 +57,7 @@ jobs:
   api:
     needs: changes
     # api job also runs the CONTRACT TEST: mocks the Python service and
-    # asserts the agreed JSON shape (docs/TECHMIND.md section 7).
+    # asserts the agreed JSON shape.
     if: ${{ needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
     defaults:

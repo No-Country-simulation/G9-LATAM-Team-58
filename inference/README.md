@@ -1,66 +1,100 @@
 # inference/
 
-Servicio de inferencia **sin estado**: embeddings y clasificación. **No** toca la
-base de datos ni guarda el índice del corpus en memoria — el ranking por similitud
-lo resuelve la Autonomous Database con `VECTOR_DISTANCE`, orquestado por `api/`.
+Servicio de inferencia **sin estado** de Mindloom: embeddings y clasificación.
+**No** toca la base de datos ni guarda el índice del corpus en memoria — el
+ranking por similitud lo resuelve la Autonomous Database con `VECTOR_DISTANCE`,
+orquestado por `api/`.
 
-## Consume
+Solo lo llama `api/`, nunca la web.
 
-- `model.joblib` desde OCI Object Storage, descargado al arrancar.
+## Contenido
 
-> **Atajo de dev.** Si la env var `MODEL_LOCAL_PATH` apunta a un archivo existente
-> (por ejemplo `models/model.joblib`, copiado a mano y ya cubierto por `.gitignore`),
-> `load_model()` lo carga directo y **no** toca OCI — no hace falta `~/.oci/config`
-> para levantar el servicio en local. Sin la env var (o si el archivo no existe), el
-> flujo es el de siempre. Ver `.env.example`.
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Configuración](#configuración)
+- [Uso](#uso)
+- [Pruebas](#pruebas)
+- [Contratos y fronteras](#contratos-y-fronteras)
+- [Referencia de la API](#referencia-de-la-api)
+  - [`POST /predict`](#post-predict--clasificar-un-texto)
+  - [`POST /embed`](#post-embed--vectorizar-una-consulta)
+  - [`GET /health`](#get-health--estado)
+  - [`GET /model/info`](#get-modelinfo--metadatos-del-modelo)
+- [Notas y trampas](#notas-y-trampas)
 
-## Fronteras
+## Requisitos
 
-- Solo lo llama `api/`, nunca la web.
-- Las claves de `model.joblib` y cómo se generan están en `notebook/README.md`. El
-  transformer **no** va dentro del `.joblib` — solo su nombre; la imagen Docker lo
-  hornea en tiempo de build para que el contenedor arranque sin red.
-- **Prefijos E5.** El contenido se codifica como `"passage: {texto}"` y las consultas
-  como `"query: {texto}"`. Mezclarlos degrada la búsqueda en silencio, sin error.
-- **Dos dimensiones, y no son intercambiables.** El clasificador consume
-  `meta["feature_dim"]` features —`hstack([embedding, normalize(svd.transform(tfidf))])`—
-  pero lo que sale al contrato y a la base de datos es **siempre** el embedding de
-  `meta["dim"]` (384). Léelos del `meta`, no los hardcodees.
-- **La búsqueda por similitud vive en la Autonomous Database**, no aquí: la API pide
-  el vector de la consulta a `POST /embed` y la base resuelve el ranking con
-  `VECTOR_DISTANCE`. Este servicio vectoriza; no busca, no indexa y no persiste.
-- **La proyección se calcula en caliente.** `umap_reducer.transform()` corre dentro
-  de `POST /predict`, así que un contenido añadido en vivo recibe sus coordenadas en
-  el momento y la API las persiste con el resto. El mapa incluye siempre todo el
-  corpus.
+- Python 3.12
+- Torch, en su build de CPU — nunca la de CUDA (ver
+  [CONTRIBUTING.md](../CONTRIBUTING.md)).
+
+## Instalación
+
+```bash
+cd inference
+python -m venv .venv && source .venv/bin/activate   # o .venv\Scripts\activate en Windows
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt
+```
+
+## Configuración
+
+| Variable | Requerida | Para qué |
+|---|---|---|
+| `MODEL_BUCKET` | en producción | bucket de OCI Object Storage con `model.joblib` |
+| `MODEL_LOCAL_PATH` | no | atajo de dev — ver abajo |
+
+**Atajo de dev.** Si `MODEL_LOCAL_PATH` apunta a un archivo existente (por
+ejemplo `models/model.joblib`, copiado a mano y ya cubierto por `.gitignore`),
+`load_model()` lo carga directo y **no** toca OCI — no hace falta
+`~/.oci/config` para levantar el servicio en local. Sin la env var (o si el
+archivo no existe), el servicio descarga el artefacto del bucket al arrancar.
+Ver `.env.example`.
+
+## Uso
+
+```bash
+uvicorn app.main:app --reload --env-file .env
+```
+
+Sirve en `http://localhost:8000`. Catálogo completo de rutas en
+[Referencia de la API](#referencia-de-la-api).
+
+## Pruebas
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+`requirements-dev.txt` es solo para dev/CI — no se hornea en la imagen Docker
+(`Dockerfile` instala únicamente `requirements.txt`).
+
+## Contratos y fronteras
+
+- **Contrato interno:** este servicio lo llama **solo la API** (`api/`), nunca
+  la web. Por eso **todo va en inglés** (paths, keys, valores) salvo los
+  valores de categoría (`"Backend"`, `"Datos e IA"`…), que son las etiquetas
+  del modelo.
+- **Sin estado:** no toca la base de datos y no mantiene ningún índice. Lo
+  único que carga es el artefacto (modelo + tokenizer). Por eso cabe en la VM.
+- Las claves de `model.joblib` y cómo se generan están en
+  [`notebook/README.md`](../notebook/README.md). El transformer **no** va
+  dentro del `.joblib` — solo su nombre; la imagen Docker lo hornea en tiempo
+  de build para que el contenedor arranque sin red.
 - **No hay reentrenamiento.** El clasificador es una `LogisticRegression` y el
   artefacto se sustituye publicando una versión nueva en el bucket.
+- **Errores (FastAPI):** validación de entrada → `422` con
+  `{ "detail": [...] }`; errores controlados → `{ "detail": "mensaje" }` con
+  el código HTTP correspondiente.
 
----
+> El mapeo de qué ruta de la API llama a cuál de inference está en
+> [`api/README.md`](../api/README.md) (sección "Orquestación"), que es quien
+> orquesta.
 
-## Convenciones
+## Referencia de la API
 
-- **Base URL** (dev): `http://localhost:8000`
-- **Contrato interno:** este servicio lo llama **solo la API** (`api/`), nunca la
-  web. Por eso **todo va en inglés** (paths, keys, valores) salvo los valores de
-  categoría (`"Backend"`, `"Datos e IA"`…), que son las etiquetas del modelo.
-- **Sin estado:** no toca la base de datos y no mantiene ningún índice. Lo único
-  que carga es el artefacto (modelo + tokenizer). Por eso cabe en la VM.
-- **Prefijos E5 (importante):** el caller envía **texto plano** y el servicio aplica
-  el prefijo. Pero **el caller decide cuál**: `POST /predict` usa `"passage: "`
-  siempre (es el camino de indexación) y `POST /embed` exige el campo `type`, sin
-  valor por defecto. Mezclarlos degrada la búsqueda **en silencio, sin lanzar
-  error** — por eso no hay default que adivinar.
-- **Errores (FastAPI):** validación de entrada → `422` con `{ "detail": [...] }`;
-  errores controlados → `{ "detail": "mensaje" }` con el código HTTP
-  correspondiente.
-
-> El mapeo de qué ruta de la API llama a cuál de inference está en `api/README.md`
-> (sección "Orquestación"), que es quien orquesta.
-
----
-
-## `POST /predict` — clasificar un texto
+### `POST /predict` — clasificar un texto
 
 **Recibe** (body):
 
@@ -105,7 +139,109 @@ lo resuelve la Autonomous Database con `VECTOR_DISTANCE`, orquestado por `api/`.
 
 Este endpoint aplica el prefijo `"passage: "`, siempre.
 
-### ⚠️ El clasificador NO come el embedding
+### `POST /embed` — vectorizar una consulta
+
+Solo el vector. Lo usa `GET /search?mode=semantic` de la API, que después lanza el
+`VECTOR_DISTANCE` contra la base.
+
+**Recibe** (body):
+
+```json
+{ "text": "cómo validar entradas en Spring", "type": "query" }
+```
+
+| Campo | Tipo | Default | Qué hace |
+|---|---|---|---|
+| `text` | string | — (obligatorio) | texto a vectorizar |
+| `type` | `"query"` \| `"passage"` | — (**obligatorio**) | qué prefijo E5 aplicar |
+
+**Devuelve** `200 OK`:
+
+```json
+{ "embedding": [0.021, -0.118, "…384 floats…"] }
+```
+
+> **`type` no tiene valor por defecto a propósito.** Si falta, `422`. E5 exige
+> `"query: "` al consultar y `"passage: "` al indexar; mezclarlos no lanza ninguna
+> excepción, solo devuelve resultados peores que nadie nota hasta la demo. Un
+> default sería adivinar, y adivinar mal es invisible.
+
+### `GET /health` — estado
+
+**Recibe:** nada.
+
+**Devuelve** `200 OK`:
+
+```json
+{ "status": "ok", "model_loaded": true, "version": "v1" }
+```
+
+Útil para el healthcheck del contenedor / orquestador.
+
+### `GET /model/info` — metadatos del modelo
+
+**Recibe:** nada.
+
+**Devuelve** `200 OK` — el bloque `meta` del artefacto cargado:
+
+```json
+{
+  "version": "v1",
+  "embedding_model": "intfloat/multilingual-e5-small",
+  "dim": 384,
+  "feature_dim": 884,
+  "svd_components": 500,
+  "classifier_c": 4.0,
+  "doc_prefix": "passage: ",
+  "query_prefix": "query: ",
+  "categories": ["Backend", "Frontend", "Móvil", "Datos e IA", "DevOps y Cloud", "Bases de datos", "Seguridad", "Fundamentos"],
+  "n_clusters": 8,
+  "terms_by_category": { "Backend": ["spring", "java", "…10 términos…"], "…": [] },
+  "metrics": {
+    "embedding_macro_f1_en": 0.0,
+    "embedding_macro_f1_es": 0.0,
+    "tfidf_macro_f1_en": 0.0,
+    "tfidf_macro_f1_es": 0.0,
+    "embedding_macro_f1_es_reliable": 0.0,
+    "es_reliable_categories": 8,
+    "es_min_support": 30
+  },
+  "train_size": 0
+}
+```
+
+Son las 13 claves del bloque `meta`, tal cual las serializa el notebook. Las métricas
+en inglés llegan como `null` si el artefacto se entrenó sin `test_corpus.jsonl`: ese
+conjunto es opcional y su ausencia no invalida el modelo.
+
+`dim` son las dimensiones del **embedding**, que es lo que viaja en el contrato y lo
+que guarda la base. `feature_dim` es lo que consume el **clasificador**
+(`dim + svd_components`). Son dos números distintos: ver *"El clasificador NO come el
+embedding"* en [Notas y trampas](#notas-y-trampas).
+
+`embedding_*` son las métricas del clasificador de producción y `tfidf_*` las del
+modelo explicable, que sirve de referencia. `embedding_macro_f1_es_reliable` es la
+macro-F1 en español restringida a las categorías con muestra suficiente en el test
+(`meta.metrics.es_min_support`, 30 documentos); la macro-F1 promedia sin ponderar por
+tamaño, así que una categoría con muy pocos documentos aporta ruido.
+
+**Errores:** `503` si el modelo aún no está cargado.
+
+## Notas y trampas
+
+- **Prefijos E5.** El contenido se codifica como `"passage: {texto}"` y las
+  consultas como `"query: {texto}"`. Mezclarlos degrada la búsqueda en silencio,
+  sin error.
+- **La búsqueda por similitud vive en la Autonomous Database**, no aquí: la API
+  pide el vector de la consulta a `POST /embed` y la base resuelve el ranking
+  con `VECTOR_DISTANCE`. Este servicio vectoriza; no busca, no indexa y no
+  persiste.
+- **La proyección se calcula en caliente.** `umap_reducer.transform()` corre
+  dentro de `POST /predict`, así que un contenido añadido en vivo recibe sus
+  coordenadas en el momento y la API las persiste con el resto. El mapa
+  incluye siempre todo el corpus.
+
+### El clasificador NO come el embedding
 
 Este error **revienta a la vista**, en el primer request. Es el mejor de los cuatro
 que cubre esta sección: los dos primeros de la lista de más abajo no avisan de nada.
@@ -182,98 +318,7 @@ vez de en el primer request:
 assert classifier.n_features_in_ == art["meta"]["feature_dim"]
 ```
 
-Las 9 claves del artefacto y qué contiene cada una: `notebook/README.md`.
+Las 9 claves del artefacto y qué contiene cada una: [`notebook/README.md`](../notebook/README.md).
 
 ---
-
-## `POST /embed` — vectorizar una consulta
-
-Solo el vector. Lo usa `GET /search?mode=semantic` de la API, que después lanza el
-`VECTOR_DISTANCE` contra la base.
-
-**Recibe** (body):
-
-```json
-{ "text": "cómo validar entradas en Spring", "type": "query" }
-```
-
-| Campo | Tipo | Default | Qué hace |
-|---|---|---|---|
-| `text` | string | — (obligatorio) | texto a vectorizar |
-| `type` | `"query"` \| `"passage"` | — (**obligatorio**) | qué prefijo E5 aplicar |
-
-**Devuelve** `200 OK`:
-
-```json
-{ "embedding": [0.021, -0.118, "…384 floats…"] }
-```
-
-> **`type` no tiene valor por defecto a propósito.** Si falta, `422`. E5 exige
-> `"query: "` al consultar y `"passage: "` al indexar; mezclarlos no lanza ninguna
-> excepción, solo devuelve resultados peores que nadie nota hasta la demo. Un
-> default sería adivinar, y adivinar mal es invisible.
-
----
-
-## `GET /health` — estado
-
-**Recibe:** nada.
-
-**Devuelve** `200 OK`:
-
-```json
-{ "status": "ok", "model_loaded": true, "version": "v1" }
-```
-
-Útil para el healthcheck del contenedor / orquestador.
-
----
-
-## `GET /model/info` — metadatos del modelo
-
-**Recibe:** nada.
-
-**Devuelve** `200 OK` — el bloque `meta` del artefacto cargado:
-
-```json
-{
-  "version": "v1",
-  "embedding_model": "intfloat/multilingual-e5-small",
-  "dim": 384,
-  "feature_dim": 884,
-  "svd_components": 500,
-  "classifier_c": 4.0,
-  "doc_prefix": "passage: ",
-  "query_prefix": "query: ",
-  "categories": ["Backend", "Frontend", "Móvil", "Datos e IA", "DevOps y Cloud", "Bases de datos", "Seguridad", "Fundamentos"],
-  "n_clusters": 8,
-  "terms_by_category": { "Backend": ["spring", "java", "…10 términos…"], "…": [] },
-  "metrics": {
-    "embedding_macro_f1_en": 0.0,
-    "embedding_macro_f1_es": 0.0,
-    "tfidf_macro_f1_en": 0.0,
-    "tfidf_macro_f1_es": 0.0,
-    "embedding_macro_f1_es_reliable": 0.0,
-    "es_reliable_categories": 8,
-    "es_min_support": 30
-  },
-  "train_size": 0
-}
-```
-
-Son las 13 claves del bloque `meta`, tal cual las serializa el notebook. Las métricas
-en inglés llegan como `null` si el artefacto se entrenó sin `test_corpus.jsonl`: ese
-conjunto es opcional y su ausencia no invalida el modelo.
-
-`dim` son las dimensiones del **embedding**, que es lo que viaja en el contrato y lo
-que guarda la base. `feature_dim` es lo que consume el **clasificador**
-(`dim + svd_components`). Son dos números distintos: ver *"El clasificador NO come el
-embedding"* en `POST /predict`.
-
-`embedding_*` son las métricas del clasificador de producción y `tfidf_*` las del
-modelo explicable, que sirve de referencia. `embedding_macro_f1_es_reliable` es la
-macro-F1 en español restringida a las categorías con muestra suficiente en el test
-(`meta.metrics.es_min_support`, 30 documentos); la macro-F1 promedia sin ponderar por
-tamaño, así que una categoría con muy pocos documentos aporta ruido.
-
-**Errores:** `503` si el modelo aún no está cargado.
+← [README principal](../README.md) · [Cómo contribuir](../CONTRIBUTING.md)
