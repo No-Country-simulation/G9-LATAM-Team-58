@@ -1,12 +1,10 @@
 fastapi
 uvicorn
 pydantic
-python-dotenv  # habilita `uvicorn --env-file .env` en dev; el contenedor no lo usa
+python-dotenv
 joblib==1.5.3
 scikit-learn==1.9.0
 umap-learn==0.5.12
-# numba y llvmlite pineados a la versión exacta del notebook (pip freeze del
-# entorno de entrenamiento) -- el pickle de UMAP no tolera otra versión.
 numba==0.60.0
 llvmlite==0.43.0
 oci

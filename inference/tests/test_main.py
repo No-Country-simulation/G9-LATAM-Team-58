@@ -28,7 +28,6 @@ def test_predict_shape(client):
     body = res.json()
     assert "category" in body
     assert isinstance(body["keywords"], list)
-    # Embedding must be the full 384-dim vector, not a truncated mock.
     assert len(body["embedding"]) == 384
 
 
@@ -39,6 +38,5 @@ def test_embed_dim(client):
 
 
 def test_embed_rejects_bad_type(client):
-    # type is Literal["query", "passage"]; anything else is a 422.
     res = client.post("/embed", json={"text": "hola", "type": "documento"})
     assert res.status_code == 422
