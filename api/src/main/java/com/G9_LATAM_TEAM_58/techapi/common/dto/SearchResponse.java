@@ -1,6 +1,5 @@
-package com.G9_LATAM_TEAM_58.techapi.inference.dto;
+package com.G9_LATAM_TEAM_58.techapi.common.dto;
 
-import com.G9_LATAM_TEAM_58.techapi.common.dto.SearchResult;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -4,8 +4,8 @@ import com.G9_LATAM_TEAM_58.techapi.common.dto.SearchResult;
 import com.G9_LATAM_TEAM_58.techapi.common.util.VectorUtils;
 import com.G9_LATAM_TEAM_58.techapi.domain.ContentRepository;
 import com.G9_LATAM_TEAM_58.techapi.inference.client.IInferenceClient;
+import com.G9_LATAM_TEAM_58.techapi.common.dto.SearchResponse;
 import com.G9_LATAM_TEAM_58.techapi.inference.dto.EmbedResponse;
-import com.G9_LATAM_TEAM_58.techapi.inference.dto.SearchResponse;
 import com.G9_LATAM_TEAM_58.techapi.inference.service.ISemanticSearchService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -34,10 +34,13 @@ public class SemanticSearchServiceImpl implements ISemanticSearchService {
         int offset = page * size;
 
         List<Object[]> rows;
+        long total;
         if (category != null && !category.isBlank()) {
             rows = contentRepository.semanticSearchWithCategory(queryEmbeddingString, category, offset, size);
+            total = contentRepository.countByCategory(category);
         } else {
             rows = contentRepository.semanticSearch(queryEmbeddingString, offset, size);
+            total = contentRepository.countAll();
         }
 
         List<SearchResult> results = rows.stream()
@@ -55,7 +58,7 @@ public class SemanticSearchServiceImpl implements ISemanticSearchService {
 
         SearchResponse response = new SearchResponse();
         response.setMode("semantic");
-        response.setTotal(results.size());
+        response.setTotal(total);
         response.setElapsedMs(elapsed);
         response.setResults(results);
 

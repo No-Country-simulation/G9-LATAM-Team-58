@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("db")
@@ -47,6 +48,11 @@ class SearchIntegrationTest {
         List<Object> results = body.read("$.results", List.class);
         assertNotNull(results, "results must be present");
 
+        Number total = body.read("$.total", Number.class);
+        assertNotNull(total, "total must be present");
+        assertTrue(total.longValue() > 0, "total must be greater than 0");
+        assertTrue(total.longValue() >= results.size(), "total must cover all results on the page");
+
         Number elapsedMs = body.read("$.elapsedMs", Number.class);
         assertNotNull(elapsedMs, "elapsedMs must be present");
     }
@@ -62,6 +68,11 @@ class SearchIntegrationTest {
 
         List<Object> results = body.read("$.results", List.class);
         assertNotNull(results, "results must be present");
+
+        Number total = body.read("$.total", Number.class);
+        assertNotNull(total, "total must be present");
+        assertTrue(total.longValue() > 0, "total must be greater than 0");
+        assertTrue(total.longValue() >= results.size(), "total must cover all results on the page");
     }
 
     @Test

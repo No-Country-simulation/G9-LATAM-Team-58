@@ -66,6 +66,12 @@ public interface ContentRepository extends JpaRepository<Content, String> {
             @Param("limit") int limit
     );
 
+    @Query(value = "SELECT COUNT(*) FROM contents", nativeQuery = true)
+    long countAll();
+
+    @Query(value = "SELECT COUNT(*) FROM contents WHERE category = :category", nativeQuery = true)
+    long countByCategory(@Param("category") String category);
+
     @Query(value = "SELECT id, title, category FROM contents WHERE title LIKE %:q% OR body LIKE %:q%",
             countQuery = "SELECT COUNT(*) FROM contents WHERE title LIKE %:q% OR body LIKE %:q%",
             nativeQuery = true)
