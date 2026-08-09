@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPageTokens } from './contents-pagination';
+import { buildPageTokens } from '../pagination-tokens';
 
 // NOTE: `previous` starts at -2 in the source, so the first token is always
 // preceded by an 'ellipsis' — even when page 0 is included in the window and

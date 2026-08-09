@@ -1,4 +1,3 @@
-import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { CATEGORIES } from '@/shared/config/constants';
 
@@ -23,64 +22,52 @@ export function useContentsParamsState() {
 	const category = rawCategory && isCategory(rawCategory) ? rawCategory : undefined;
 	const page = rawPage !== null && /^\d+$/.test(rawPage) ? Number(rawPage) : 0;
 
-	const setQuery = useCallback(
-		(next: string) => {
-			setSearchParams(
-				params => {
-					if (next) {
-						params.set('q', next);
-					} else {
-						params.delete('q');
-					}
-					params.delete('page');
-					return params;
-				},
-				{ replace: true }
-			);
-		},
-		[setSearchParams]
-	);
-
-	const setCategory = useCallback(
-		(next: string | undefined) => {
-			setSearchParams(params => {
+	function setQuery(next: string) {
+		setSearchParams(
+			params => {
 				if (next) {
-					params.set('category', next);
+					params.set('q', next);
 				} else {
-					params.delete('category');
+					params.delete('q');
 				}
 				params.delete('page');
 				return params;
-			});
-		},
-		[setSearchParams]
-	);
+			},
+			{ replace: true }
+		);
+	}
 
-	const setPage = useCallback(
-		(next: number) => {
-			setSearchParams(params => {
-				if (next > 0) {
-					params.set('page', String(next));
-				} else {
-					params.delete('page');
-				}
-				return params;
-			});
-		},
-		[setSearchParams]
-	);
+	function setCategory(next: string | undefined) {
+		setSearchParams(params => {
+			if (next) {
+				params.set('category', next);
+			} else {
+				params.delete('category');
+			}
+			params.delete('page');
+			return params;
+		});
+	}
 
-	const clearFilters = useCallback(() => {
+	function setPage(next: number) {
+		setSearchParams(params => {
+			if (next > 0) {
+				params.set('page', String(next));
+			} else {
+				params.delete('page');
+			}
+			return params;
+		});
+	}
+
+	function clearFilters() {
 		setSearchParams(params => {
 			params.delete('q');
 			params.delete('category');
 			params.delete('page');
 			return params;
 		});
-	}, [setSearchParams]);
+	}
 
-	return useMemo(
-		() => ({ q, category, page, setQuery, setCategory, setPage, clearFilters }),
-		[q, category, page, setQuery, setCategory, setPage, clearFilters]
-	);
+	return { q, category, page, setQuery, setCategory, setPage, clearFilters };
 }

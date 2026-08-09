@@ -12,7 +12,7 @@ function StepIndicator({ state }: { state: PipelineStep['state'] }) {
 	return <IconCircle className="size-4 shrink-0 text-outline" />;
 }
 
-/** Renders the pipeline steps. Owns no timing logic: the steps arrive as data. */
+/** Owns no timing logic: the steps arrive as data. */
 export function InferencePipeline({ steps }: { steps: PipelineStep[] }) {
 	return (
 		<ul className="flex flex-col gap-4">

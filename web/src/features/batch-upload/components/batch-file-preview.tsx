@@ -49,6 +49,7 @@ export function BatchFilePreview({ file, parsed, isPending, onRemove, onUpload }
 							</tr>
 						</thead>
 						<tbody>
+							{/* CSV rows carry no id and this slice never reorders or filters, so the index is a safe key. */}
 							{previewRows.map((row, index) => (
 								<tr key={index} className="border-b last:border-0">
 									<td className="px-5 py-3 font-mono text-xs tabular-nums text-muted-foreground">{index + 1}</td>

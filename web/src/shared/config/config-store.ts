@@ -3,12 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 
-/**
- * Storage key for the persisted preferences.
- *
- * KEEP IN SYNC with the inline script in index.html, which reads this same key
- * before the first paint and cannot import TypeScript.
- */
+/** Storage key for the persisted preferences. */
 export const CONFIG_STORAGE_KEY = 'mindloom.config';
 
 export const DEFAULT_THEME: ThemePreference = 'dark';

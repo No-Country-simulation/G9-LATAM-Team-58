@@ -7,7 +7,6 @@ interface PageHeaderProps {
 	className?: string;
 }
 
-/** Consistent title and supporting text for application pages. */
 export function PageHeader({ title, description, className }: PageHeaderProps) {
 	return (
 		<header className={cn('shrink-0', className)}>

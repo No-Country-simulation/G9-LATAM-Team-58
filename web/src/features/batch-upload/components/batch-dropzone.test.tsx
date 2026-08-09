@@ -37,12 +37,14 @@ describe('BatchDropzone', () => {
 
 	it('forwards drag events to the corresponding handlers', () => {
 		const { container, onDragEnter, onDragOver, onDragLeave, onDrop } = setup();
-		const label = container.querySelector('label') as HTMLLabelElement;
+		// Drag handlers live on the outer dropzone container, not the inner
+		// label — the label only wraps the file input now (single-control rule).
+		const dropzone = container.firstElementChild as HTMLElement;
 
-		fireEvent.dragEnter(label);
-		fireEvent.dragOver(label);
-		fireEvent.dragLeave(label);
-		fireEvent.drop(label);
+		fireEvent.dragEnter(dropzone);
+		fireEvent.dragOver(dropzone);
+		fireEvent.dragLeave(dropzone);
+		fireEvent.drop(dropzone);
 
 		expect(onDragEnter).toHaveBeenCalledTimes(1);
 		expect(onDragOver).toHaveBeenCalledTimes(1);

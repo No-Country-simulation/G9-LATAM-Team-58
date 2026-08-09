@@ -23,7 +23,7 @@ export interface NavGroup {
 
 /**
  * Single source of truth for the app menu.
- * Adding a page = one entry here + its route in `src/app/routes.ts`.
+ * Adding a page = one entry here + its route in `src/routes.ts`.
  */
 export const NAV_GROUPS: NavGroup[] = [
 	{

@@ -15,10 +15,7 @@ import { router } from './routes';
 // tokens the `:root` default — pending decision.
 startThemeSync();
 
-/**
- * Application composition: everything the app needs wired together. `main.tsx`
- * only mounts this.
- */
+/** `main.tsx` only mounts this. */
 export function App() {
 	return (
 		<QueryClientProvider client={queryClient}>

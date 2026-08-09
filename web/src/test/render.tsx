@@ -4,11 +4,9 @@ import { MemoryRouter } from 'react-router';
 import { render, type RenderOptions } from '@testing-library/react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-/**
- * Fresh QueryClient per call: sharing the app's singleton (shared/config/query-client.ts)
- * would leak cache and in-flight state between tests. Retries are off so failed
- * requests reject immediately instead of stalling tests behind backoff delays.
- */
+// Fresh QueryClient per call: sharing the app's singleton (shared/config/query-client.ts)
+// would leak cache and in-flight state between tests. Retries are off so failed
+// requests reject immediately instead of stalling tests behind backoff delays.
 function createTestQueryClient() {
 	return new QueryClient({
 		defaultOptions: {

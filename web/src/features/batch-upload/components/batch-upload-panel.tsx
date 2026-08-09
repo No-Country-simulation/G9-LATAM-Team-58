@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ErrorBanner } from '@/components/feedback/error-banner';
 import type { ApiError } from '@/shared/api/client';
 import type { BatchUploadResponse } from '@/shared/api/contracts';
-import { useLoadingCompletion } from '@/shared/hooks/use-loading-completion';
-import { useBatchFile } from '../use-batch-file';
+import type { useLoadingCompletion } from '@/shared/hooks/use-loading-completion';
+import type { useBatchFile } from '../use-batch-file';
 import { BatchCategoryBreakdown } from './batch-category-breakdown';
 import { BatchDropzone } from './batch-dropzone';
 import { BatchErrorTable } from './batch-error-table';
@@ -17,19 +17,27 @@ interface BatchUploadPanelProps {
 	isPending: boolean;
 	error: ApiError | null;
 	data: BatchUploadResponse | null;
+	loading: ReturnType<typeof useLoadingCompletion>;
+	batchFile: ReturnType<typeof useBatchFile>;
 	onUpload: (file: File) => void;
 	onReset: () => void;
-	onStepChange?: (step: 1 | 2 | 3, hasError: boolean) => void;
 }
 
 /** Routes the five states of the batch flow; each one owns its layout. */
-export function BatchUploadPanel({ isPending, error, data, onUpload, onReset, onStepChange }: BatchUploadPanelProps) {
-	const loading = useLoadingCompletion({ isPending, isComplete: Boolean(data) });
-	const batchFile = useBatchFile(onReset);
-
+export function BatchUploadPanel({
+	isPending,
+	error,
+	data,
+	loading,
+	batchFile,
+	onUpload,
+	onReset
+}: BatchUploadPanelProps) {
 	const startedAtRef = useRef<number | null>(null);
 	const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+	// `useElapsedSeconds` ticks from mount and can't survive the transition into
+	// the result view, so the duration is captured by hand across that boundary.
 	useEffect(() => {
 		if (isPending && startedAtRef.current === null) {
 			startedAtRef.current = Date.now();
@@ -39,15 +47,6 @@ export function BatchUploadPanel({ isPending, error, data, onUpload, onReset, on
 			startedAtRef.current = null;
 		}
 	}, [isPending, data]);
-
-	const hasSchemaError =
-		Boolean(batchFile.parse && !batchFile.parse.ok) || Boolean(batchFile.validationError) || Boolean(error);
-
-	useEffect(() => {
-		if (loading.isVisible) onStepChange?.(2, false);
-		else if (data) onStepChange?.(3, false);
-		else onStepChange?.(1, hasSchemaError);
-	}, [loading.isVisible, data, hasSchemaError, onStepChange]);
 
 	function handleUpload() {
 		if (batchFile.file && !isPending) onUpload(batchFile.file);

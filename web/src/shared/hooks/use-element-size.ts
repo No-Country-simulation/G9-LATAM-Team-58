@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ElementSize {
 	width: number;
@@ -7,16 +7,21 @@ interface ElementSize {
 
 /**
  * Tracks an element's content-box size via ResizeObserver, for canvases that
- * need pixel dimensions up front (the map's canvas). Uses a callback ref, not
- * a `useEffect(..., [])` on a plain ref: the element this measures can mount
+ * need pixel dimensions up front (the map's canvas).
+ *
+ * The node arrives through state — the returned ref is a state setter — not a
+ * `useEffect(..., [])` on a plain ref: the element this measures can mount
  * behind an early return (a loading state, for instance), arriving on a later
- * render than the one where the effect ran — a callback ref fires exactly when
- * the node attaches, whichever render that happens to be.
+ * render than the one where such an effect ran. Keying the effect on the
+ * stored node subscribes exactly when the element attaches, whichever render
+ * that happens to be, and the observer's cleanup rides the effect lifecycle,
+ * so the subscription is released on detach and unmount.
  */
 export function useElementSize<T extends HTMLElement>() {
+	const [element, setElement] = useState<T | null>(null);
 	const [size, setSize] = useState<ElementSize>({ width: 0, height: 0 });
 
-	const ref = useCallback((element: T | null) => {
+	useEffect(() => {
 		if (!element) {
 			return;
 		}
@@ -31,7 +36,7 @@ export function useElementSize<T extends HTMLElement>() {
 		});
 		observer.observe(element);
 		return () => observer.disconnect();
-	}, []);
+	}, [element]);
 
-	return [ref, size] as const;
+	return [setElement, size] as const;
 }

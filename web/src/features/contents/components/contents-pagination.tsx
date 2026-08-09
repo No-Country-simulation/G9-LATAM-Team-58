@@ -7,33 +7,12 @@ import {
 	PaginationNext,
 	PaginationPrevious
 } from '@/components/ui/pagination';
+import { buildPageTokens } from '../pagination-tokens';
 
 interface ContentsPaginationProps {
 	page: number;
 	totalPages: number;
 	onPageChange: (page: number) => void;
-}
-
-export type PageToken = number | 'ellipsis';
-
-// Always shows the first, the last, and a window of one page around the
-// current one, collapsing everything else into a single ellipsis per gap.
-export function buildPageTokens(page: number, totalPages: number): PageToken[] {
-	const tokens: PageToken[] = [];
-	const window = new Set([0, totalPages - 1, page - 1, page, page + 1]);
-
-	let previous = -2;
-	for (let index = 0; index < totalPages; index++) {
-		if (!window.has(index)) {
-			continue;
-		}
-		if (index - previous > 1) {
-			tokens.push('ellipsis');
-		}
-		tokens.push(index);
-		previous = index;
-	}
-	return tokens;
 }
 
 export function ContentsPagination({ page, totalPages, onPageChange }: ContentsPaginationProps) {
@@ -62,8 +41,10 @@ export function ContentsPagination({ page, totalPages, onPageChange }: ContentsP
 				</PaginationItem>
 
 				{tokens.map((token, index) =>
+					// An ellipsis is always followed by a real page number, so that
+					// neighbor gives it a key stable across re-renders instead of its index.
 					token === 'ellipsis' ? (
-						<PaginationItem key={`ellipsis-${index}`}>
+						<PaginationItem key={`ellipsis-before-${tokens[index + 1]}`}>
 							<PaginationEllipsis />
 						</PaginationItem>
 					) : (
