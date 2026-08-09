@@ -1,13 +1,11 @@
 import type { CSSProperties } from 'react';
 import type { Category } from '@/shared/config/constants';
 
-/**
- * Each category owns a colour, defined as an oklch CSS variable in
- * `src/styles/index.css` (both `:root` and `.dark`). This map holds the variable
- * names, never the colour values: the theme decides the actual colour.
- *
- * Use it only for pills, dots and bars — never as a panel background.
- */
+// Each category owns a colour, defined as an oklch CSS variable in
+// `src/styles/index.css` (both `:root` and `.dark`). This map holds the variable
+// names, never the colour values: the theme decides the actual colour.
+//
+// Use it only for pills, dots and bars — never as a panel background.
 const CATEGORY_COLOR_VAR: Record<Category, string> = {
 	Backend: '--cat-backend',
 	Frontend: '--cat-frontend',

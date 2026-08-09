@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { MapPanel, useMapParamsState, useMapPoints } from '@/features/cluster-map';
 import { PageHeader } from '@/components/layout/page-header';
-import type { MapPoint } from '@/shared/api/contracts';
 
 export function MapPage() {
 	const points = useMapPoints();
@@ -9,10 +8,7 @@ export function MapPage() {
 	const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
 	const [query, setQuery] = useState('');
 
-	const selectedPoint = useMemo<MapPoint | undefined>(
-		() => points.data?.find(point => point.id === params.selectedId),
-		[points.data, params.selectedId]
-	);
+	const selectedPoint = points.data?.find(point => point.id === params.selectedId);
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col gap-6 pt-8 pb-4">

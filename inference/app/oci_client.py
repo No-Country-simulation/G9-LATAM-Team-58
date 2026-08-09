@@ -7,11 +7,10 @@ import oci
 
 def _bucket_client():
     try:
-        # En la VM: Instance Principal, sin credenciales explícitas.
         signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
         return oci.object_storage.ObjectStorageClient({}, signer=signer)
     except (oci.exceptions.ConfigFileNotFound, oci.exceptions.InvalidConfig):
-        # En local: ~/.oci/config (API key).
+        # local: ~/.oci/config (API key).
         return oci.object_storage.ObjectStorageClient(oci.config.from_file())
 
 

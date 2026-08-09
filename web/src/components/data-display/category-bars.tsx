@@ -12,7 +12,7 @@ interface CategoryBarsProps {
 	showPercentage?: boolean;
 }
 
-/** One row per category: dot, name, proportional bar, count. Shared by the dashboard and the batch summary. */
+/** Shared by the dashboard and the batch summary. */
 export function CategoryBars({
 	byCategory,
 	order = 'canonical',
@@ -21,12 +21,8 @@ export function CategoryBars({
 }: CategoryBarsProps) {
 	const total = Object.values(byCategory).reduce((sum, count) => sum + count, 0);
 
-	const rows =
-		order === 'canonical'
-			? CATEGORIES.map(category => ({ category, count: byCategory[category] ?? 0 }))
-			: CATEGORIES.map(category => ({ category, count: byCategory[category] ?? 0 }))
-					.filter(row => row.count > 0)
-					.sort((a, b) => b.count - a.count);
+	const allRows = CATEGORIES.map(category => ({ category, count: byCategory[category] ?? 0 }));
+	const rows = order === 'canonical' ? allRows : allRows.filter(row => row.count > 0).sort((a, b) => b.count - a.count);
 
 	const widthDenominator = scale === 'total' ? total : Math.max(...rows.map(row => row.count), 1);
 

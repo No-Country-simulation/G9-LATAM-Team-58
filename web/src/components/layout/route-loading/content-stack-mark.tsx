@@ -7,7 +7,6 @@ const cards = [
 	{ x: 20, y: 80, width: 80, height: 14, delay: '0.75s' }
 ];
 
-/** Animated visual for route loading: scattered content settling into an ordered stack. */
 export function ContentStackMark() {
 	return (
 		<svg viewBox="0 0 120 120" className="h-32 w-32 overflow-visible" fill="none" aria-hidden="true">

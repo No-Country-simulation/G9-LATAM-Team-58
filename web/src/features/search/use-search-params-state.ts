@@ -1,4 +1,3 @@
-import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { CATEGORIES, SEARCH_MODES, type SearchMode } from '@/shared/config/constants';
 
@@ -28,74 +27,59 @@ export function useSearchParamsState() {
 	const category = rawCategory && isCategory(rawCategory) ? rawCategory : undefined;
 	const page = rawPage !== null && /^\d+$/.test(rawPage) ? Number(rawPage) : 0;
 
-	const setQuery = useCallback(
-		(next: string) => {
-			setSearchParams(
-				params => {
-					if (next) {
-						params.set('q', next);
-					} else {
-						params.delete('q');
-					}
-					params.delete('page');
-					return params;
-				},
-				{ replace: true }
-			);
-		},
-		[setSearchParams]
-	);
-
-	const setMode = useCallback(
-		(next: SearchMode) => {
-			setSearchParams(params => {
-				params.set('mode', next);
-				params.delete('page');
-				return params;
-			});
-		},
-		[setSearchParams]
-	);
-
-	const setCategory = useCallback(
-		(next: string | undefined) => {
-			setSearchParams(params => {
+	function setQuery(next: string) {
+		setSearchParams(
+			params => {
 				if (next) {
-					params.set('category', next);
+					params.set('q', next);
 				} else {
-					params.delete('category');
+					params.delete('q');
 				}
 				params.delete('page');
 				return params;
-			});
-		},
-		[setSearchParams]
-	);
+			},
+			{ replace: true }
+		);
+	}
 
-	const setPage = useCallback(
-		(next: number) => {
-			setSearchParams(params => {
-				if (next > 0) {
-					params.set('page', String(next));
-				} else {
-					params.delete('page');
-				}
-				return params;
-			});
-		},
-		[setSearchParams]
-	);
+	function setMode(next: SearchMode) {
+		setSearchParams(params => {
+			params.set('mode', next);
+			params.delete('page');
+			return params;
+		});
+	}
 
-	const clearFilters = useCallback(() => {
+	function setCategory(next: string | undefined) {
+		setSearchParams(params => {
+			if (next) {
+				params.set('category', next);
+			} else {
+				params.delete('category');
+			}
+			params.delete('page');
+			return params;
+		});
+	}
+
+	function setPage(next: number) {
+		setSearchParams(params => {
+			if (next > 0) {
+				params.set('page', String(next));
+			} else {
+				params.delete('page');
+			}
+			return params;
+		});
+	}
+
+	function clearFilters() {
 		setSearchParams(params => {
 			params.delete('category');
 			params.delete('page');
 			return params;
 		});
-	}, [setSearchParams]);
+	}
 
-	return useMemo(
-		() => ({ query, mode, category, page, setQuery, setMode, setCategory, setPage, clearFilters }),
-		[query, mode, category, page, setQuery, setMode, setCategory, setPage, clearFilters]
-	);
+	return { query, mode, category, page, setQuery, setMode, setCategory, setPage, clearFilters };
 }

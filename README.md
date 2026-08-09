@@ -79,11 +79,11 @@ ganar nada.
 
 ## Empezar
 
-Requisitos: Java 25, Python 3.12, Node 22, Docker.
+Requisitos: Java 25, Python 3.12, Node 22, pnpm 11, Docker.
 
 ```bash
 docker compose up          # levanta api + inference
-cd web && npm run dev      # levanta la web
+cd web && pnpm dev         # levanta la web
 ```
 
 Cada carpeta documenta su propia configuración, sus variables de entorno y sus

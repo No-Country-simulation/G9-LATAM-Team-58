@@ -61,12 +61,12 @@ export function useBatchFile(onFileChange?: () => void) {
 		event.target.value = '';
 	}
 
-	function handleDragEnter(event: DragEvent<HTMLLabelElement>) {
+	function handleDragEnter(event: DragEvent<HTMLDivElement>) {
 		event.preventDefault();
 		setIsDragging(true);
 	}
 
-	function handleDragOver(event: DragEvent<HTMLLabelElement>) {
+	function handleDragOver(event: DragEvent<HTMLDivElement>) {
 		event.preventDefault();
 	}
 
@@ -74,7 +74,7 @@ export function useBatchFile(onFileChange?: () => void) {
 		setIsDragging(false);
 	}
 
-	function handleDrop(event: DragEvent<HTMLLabelElement>) {
+	function handleDrop(event: DragEvent<HTMLDivElement>) {
 		event.preventDefault();
 		setIsDragging(false);
 		selectFile(event.dataTransfer.files?.[0] ?? null);

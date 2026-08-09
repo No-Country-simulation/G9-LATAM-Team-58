@@ -33,8 +33,11 @@ jobs:
               - 'api/src/**'
             web:
               - 'web/package.json'
+              - 'web/pnpm-lock.yaml'
               - 'web/src/**'
               - 'web/vite.config.*'
+              - 'web/tsconfig*.json'
+              - 'web/eslint.config.js'
 
   inference:
     needs: changes
@@ -89,4 +92,5 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
+      - run: pnpm run test
       - run: pnpm run build
