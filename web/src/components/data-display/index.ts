@@ -5,6 +5,7 @@ export { ConfidenceBar } from './confidence-bar';
 export { EmptyState } from './empty-state';
 export { KeywordChips } from './keyword-chips';
 export { Metric } from './metric';
+export { NumberedPagination } from './numbered-pagination';
 export { RelatedList } from './related-list';
 export { SectionHeading } from './section-heading';
 export { SegmentedBar } from './segmented-bar';

@@ -7,15 +7,15 @@ import {
 	PaginationNext,
 	PaginationPrevious
 } from '@/components/ui/pagination';
-import { buildPageTokens } from '../pagination-tokens';
+import { buildPageTokens } from './pagination-tokens';
 
-interface ContentsPaginationProps {
+interface NumberedPaginationProps {
 	page: number;
 	totalPages: number;
 	onPageChange: (page: number) => void;
 }
 
-export function ContentsPagination({ page, totalPages, onPageChange }: ContentsPaginationProps) {
+export function NumberedPagination({ page, totalPages, onPageChange }: NumberedPaginationProps) {
 	if (totalPages <= 1) {
 		return null;
 	}

@@ -1,6 +1,6 @@
 import { IconArrowRight, IconCompass, IconSearchOff } from '@tabler/icons-react';
 import { Link } from 'react-router';
-import { EmptyState } from '@/components/data-display';
+import { EmptyState, NumberedPagination } from '@/components/data-display';
 import { ErrorBanner } from '@/components/feedback/error-banner';
 import { Button } from '@/components/ui/button';
 import type { ApiError } from '@/shared/api/client';
@@ -11,7 +11,6 @@ import { ExampleQueries } from './example-queries';
 import { ResultCard } from './result-card';
 import { ResultsSkeleton } from './results-skeleton';
 import { SearchMeta } from './search-meta';
-import { SearchPagination } from './search-pagination';
 
 interface SearchResultsProps {
 	hasQuery: boolean;
@@ -88,7 +87,7 @@ export function SearchResults({
 	if (data.results.length === 0) {
 		return (
 			<div className="flex flex-col gap-4">
-				<SearchMeta count={0} elapsedMs={data.elapsedMs} showElapsed={mode === 'semantic'} />
+				<SearchMeta total={0} elapsedMs={data.elapsedMs} showElapsed={mode === 'semantic'} />
 				<EmptyState
 					icon={IconSearchOff}
 					title="Sin coincidencias"
@@ -108,19 +107,17 @@ export function SearchResults({
 		);
 	}
 
+	const totalPages = Math.ceil(data.total / DEFAULT_SEARCH_PAGE_SIZE);
+
 	return (
 		<div className="flex flex-col gap-4">
-			<SearchMeta count={data.results.length} elapsedMs={data.elapsedMs} showElapsed={mode === 'semantic'} />
+			<SearchMeta total={data.total} elapsedMs={data.elapsedMs} showElapsed={mode === 'semantic'} />
 			<div className="flex flex-col gap-3">
 				{data.results.map(result => (
 					<ResultCard key={result.id} result={result} showSimilarity={mode === 'semantic'} />
 				))}
 			</div>
-			<SearchPagination
-				page={page}
-				canGoNext={data.results.length === DEFAULT_SEARCH_PAGE_SIZE}
-				onPageChange={onPageChange}
-			/>
+			<NumberedPagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
 		</div>
 	);
 }

@@ -76,7 +76,8 @@ export interface SearchResult {
 
 export interface SearchResponse {
 	mode: string;
-	// WARNING: `total` is the page size, not the overall hit count.
+	// Overall hit count across all pages (`countAll`/`countByCategory` on the
+	// server), not the size of this page — safe to use for numbered pagination.
 	total: number;
 	elapsedMs: number;
 	results: SearchResult[];
