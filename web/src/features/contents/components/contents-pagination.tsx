@@ -14,11 +14,11 @@ interface ContentsPaginationProps {
 	onPageChange: (page: number) => void;
 }
 
-type PageToken = number | 'ellipsis';
+export type PageToken = number | 'ellipsis';
 
 // Always shows the first, the last, and a window of one page around the
 // current one, collapsing everything else into a single ellipsis per gap.
-function buildPageTokens(page: number, totalPages: number): PageToken[] {
+export function buildPageTokens(page: number, totalPages: number): PageToken[] {
 	const tokens: PageToken[] = [];
 	const window = new Set([0, totalPages - 1, page - 1, page, page + 1]);
 

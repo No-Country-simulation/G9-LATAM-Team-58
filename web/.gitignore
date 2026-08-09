@@ -13,6 +13,9 @@ dist
 dist-ssr
 *.local
 
+# Test output (pnpm test:coverage)
+coverage
+
 # Secrets / local config
 .env
 .env.*

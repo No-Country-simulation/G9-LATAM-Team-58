@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
@@ -10,6 +11,18 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			'@': fileURLToPath(new URL('./src', import.meta.url))
+		}
+	},
+	test: {
+		environment: 'jsdom',
+		globals: false,
+		setupFiles: ['./src/test/setup.ts'],
+		css: false,
+		// Fixed TZ so Intl.DateTimeFormat('es') tests are stable across machines/CI.
+		env: { TZ: 'UTC' },
+		coverage: {
+			provider: 'v8',
+			reporter: ['text', 'html']
 		}
 	}
 });
