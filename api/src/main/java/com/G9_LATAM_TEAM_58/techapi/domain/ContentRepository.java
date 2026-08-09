@@ -21,50 +21,56 @@ public interface ContentRepository extends JpaRepository<Content, String> {
 
     // Native queries for embedding + vector operations
 
-    @Query(value = "SELECT embedding FROM contents WHERE id = :id", nativeQuery = true)
-    byte[] findEmbeddingById(@Param("id") String id);
+    @Query(value = "SELECT VECTOR_SERIALIZE(embedding) FROM contents WHERE id = :id", nativeQuery = true)
+    String findEmbeddingById(@Param("id") String id);
 
     @Query(value = """
         SELECT id, title, category,
-               1 - VECTOR_DISTANCE(embedding, :sourceEmbedding, COSINE) AS similarity
+               1 - VECTOR_DISTANCE(embedding, TO_VECTOR(:sourceEmbedding, 384, FLOAT32), COSINE) AS similarity
         FROM contents
         WHERE id <> :baseId
-        ORDER BY VECTOR_DISTANCE(embedding, :sourceEmbedding, COSINE)
+        ORDER BY VECTOR_DISTANCE(embedding, TO_VECTOR(:sourceEmbedding, 384, FLOAT32), COSINE)
         FETCH FIRST :limit ROWS ONLY
     """, nativeQuery = true)
     List<Object[]> findRelatedContents(
-            @Param("sourceEmbedding") byte[] sourceEmbedding,
+            @Param("sourceEmbedding") String sourceEmbedding,
             @Param("baseId") String baseId,
             @Param("limit") int limit
     );
 
     @Query(value = """
         SELECT id, title, category,
-               1 - VECTOR_DISTANCE(embedding, :queryEmbedding, COSINE) AS similarity
+               1 - VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE) AS similarity
         FROM contents
-        ORDER BY VECTOR_DISTANCE(embedding, :queryEmbedding, COSINE)
+        ORDER BY VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE)
         OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
     """, nativeQuery = true)
     List<Object[]> semanticSearch(
-            @Param("queryEmbedding") byte[] queryEmbedding,
+            @Param("queryEmbedding") String queryEmbedding,
             @Param("offset") int offset,
             @Param("limit") int limit
     );
 
     @Query(value = """
         SELECT id, title, category,
-               1 - VECTOR_DISTANCE(embedding, :queryEmbedding, COSINE) AS similarity
+               1 - VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE) AS similarity
         FROM contents
         WHERE category = :category
-        ORDER BY VECTOR_DISTANCE(embedding, :queryEmbedding, COSINE)
+        ORDER BY VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE)
         OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
     """, nativeQuery = true)
     List<Object[]> semanticSearchWithCategory(
-            @Param("queryEmbedding") byte[] queryEmbedding,
+            @Param("queryEmbedding") String queryEmbedding,
             @Param("category") String category,
             @Param("offset") int offset,
             @Param("limit") int limit
     );
+
+    @Query(value = "SELECT COUNT(*) FROM contents", nativeQuery = true)
+    long countAll();
+
+    @Query(value = "SELECT COUNT(*) FROM contents WHERE category = :category", nativeQuery = true)
+    long countByCategory(@Param("category") String category);
 
     @Query(value = "SELECT id, title, category FROM contents WHERE title LIKE %:q% OR body LIKE %:q%",
             countQuery = "SELECT COUNT(*) FROM contents WHERE title LIKE %:q% OR body LIKE %:q%",

@@ -26,4 +26,14 @@ public class VectorUtils {
         }
         return floats;
     }
+
+    public static String toVectorString(float[] floats) {
+        if (floats == null) return null;
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < floats.length; i++) {
+            if (i > 0) sb.append(",");
+            sb.append(floats[i]);
+        }
+        return sb.append("]").toString();
+    }
 }

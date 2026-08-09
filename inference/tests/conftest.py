@@ -23,7 +23,7 @@ CATEGORIES = [
 class _FakeClassifier:
     classes_ = np.arange(len(CATEGORIES))
     coef_ = np.ones((len(CATEGORIES), 3))
-    n_features_in_ = 387  # 384 + 3, coherente con feature_dim de meta
+    n_features_in_ = 387  
 
     def predict_proba(self, X):
         probs = np.full((1, len(CATEGORIES)), 0.1 / (len(CATEGORIES) - 1))

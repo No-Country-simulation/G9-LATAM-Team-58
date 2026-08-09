@@ -10,7 +10,7 @@ No es solo un clasificador: es una **base de conocimiento que crece**. Cada
 contenido que entra queda indexado y es inmediatamente recomendable para los
 siguientes.
 
-## El problema
+## 🎯 El problema
 
 Quien trabaja o estudia tecnología acumula documentación, artículos y apuntes de
 fuentes distintas, en dos idiomas, sin ningún criterio común. Encontrar algo que
@@ -19,16 +19,16 @@ palabras distintas, depende de la memoria de quien los guardó. Mindloom traslad
 esa organización de la memoria de una persona a un índice que cualquiera puede
 consultar.
 
-## Qué hace
+## 💡 Qué hace
 
-- **Clasificación temática** — asigna cada contenido a una de 8 categorías.
-- **Extracción de palabras clave** — identifica los términos más relevantes.
-- **Contenidos relacionados** — recomienda material semánticamente parecido.
-- **Búsqueda semántica** — encuentra por significado, no solo por coincidencia de palabras.
-- **Mapa del conocimiento** — visualiza todo el corpus en 2D, coloreado por categoría.
-- **Base que crece** — indexado incremental: cada nuevo contenido enriquece las recomendaciones.
+- 📚**Clasificación temática** — asigna cada contenido a una de 8 categorías.
+- 🔑**Extracción de palabras clave** — identifica los términos más relevantes.
+- 🔗**Contenidos relacionados** — recomienda material semánticamente parecido.
+- 🔍**Búsqueda semántica** — encuentra por significado, no solo por coincidencia de palabras.
+- 🗺️**Mapa del conocimiento** — visualiza todo el corpus en 2D, coloreado por categoría.
+- 📈**Base que crece** — indexado incremental: cada nuevo contenido enriquece las recomendaciones.
 
-## Categorías
+## 🧩 Categorías
 
 Backend · Frontend · Móvil · Datos e IA · DevOps y Cloud · Bases de datos ·
 Seguridad · Fundamentos

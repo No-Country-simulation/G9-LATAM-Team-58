@@ -57,10 +57,10 @@ public class ContentIngestionServiceImpl implements IContentIngestionService {
         contentRepository.save(content);
         contentRepository.flush();
 
-        byte[] embeddingBytes = VectorUtils.toBytes(prediction.getEmbedding());
-        jdbcTemplate.update("UPDATE contents SET embedding = ? WHERE id = ?", embeddingBytes, id);
+        String embeddingString = VectorUtils.toVectorString(prediction.getEmbedding());
+        jdbcTemplate.update("UPDATE contents SET embedding = TO_VECTOR(?, 384, FLOAT32) WHERE id = ?", embeddingString, id);
 
-        List<Object[]> relatedRows = contentRepository.findRelatedContents(embeddingBytes, id, 5);
+        List<Object[]> relatedRows = contentRepository.findRelatedContents(embeddingString, id, 5);
         List<SearchResult> related = relatedRows.stream()
                 .map(row -> {
                     SearchResult sr = new SearchResult();

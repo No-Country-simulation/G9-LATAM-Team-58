@@ -1,5 +1,4 @@
-# Dev/CI tooling only. Not baked into the Docker image (see inference/Dockerfile,
-# which installs requirements.txt alone). CI installs this on top to lint + test.
+# Dev/CI tooling only. Not baked into the Docker image (see inference/Dockerfile)
 ruff
 pytest
-httpx   # required by fastapi.testclient.TestClient
+httpx   
