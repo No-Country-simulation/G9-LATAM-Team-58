@@ -11,7 +11,7 @@ RUN corepack enable
 
 # Copy manifests first so the dependency layer is cached and only re-runs when
 # they change. --frozen-lockfile mirrors the CI job (ci.yml).
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
