@@ -23,14 +23,10 @@ public class KeywordSearchServiceImpl implements IKeywordSearchService {
 
     @Override
     public SearchResponse search(String q, String category, int page, int size) {
-        // Build query: if category is provided, incorporate it
-        String query = q;
-        if (category != null && !category.isBlank()) {
-            query = q + " " + category;
-        }
-
         PageRequest pageable = PageRequest.of(page, size);
-        Page<Object[]> contentPage = contentRepository.keywordSearch(query, pageable);
+        Page<Object[]> contentPage = (category != null && !category.isBlank())
+                ? contentRepository.keywordSearchWithCategory(q, category, pageable)
+                : contentRepository.keywordSearch(q, pageable);
 
         List<SearchResult> results = contentPage.getContent().stream()
                 .map(row -> {
