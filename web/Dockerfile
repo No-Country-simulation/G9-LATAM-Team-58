@@ -22,4 +22,5 @@ FROM nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /build/dist /usr/share/nginx/html
 
-EXPOSE 80
+# 443 needs the Origin Certificate mounted at /etc/nginx/certs (docker-compose.yml).
+EXPOSE 80 443
