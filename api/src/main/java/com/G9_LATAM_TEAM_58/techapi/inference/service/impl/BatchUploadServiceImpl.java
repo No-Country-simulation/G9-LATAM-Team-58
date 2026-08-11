@@ -1,5 +1,6 @@
 package com.G9_LATAM_TEAM_58.techapi.inference.service.impl;
 
+import com.G9_LATAM_TEAM_58.techapi.common.exception.ValidationException;
 import com.G9_LATAM_TEAM_58.techapi.inference.dto.BatchUploadError;
 import com.G9_LATAM_TEAM_58.techapi.inference.dto.BatchUploadResponse;
 import com.G9_LATAM_TEAM_58.techapi.inference.dto.ContentIngestionRequest;
@@ -19,6 +20,17 @@ import java.util.stream.Collectors;
 @Service
 @ConditionalOnProperty(name = "app.database.enabled", havingValue = "true")
 public class BatchUploadServiceImpl implements IBatchUploadService {
+
+    /**
+     * Ceiling on data rows per upload. Every row costs one inference call, so
+     * without a cap a single anonymous 5MB CSV could queue thousands of them and
+     * starve the service for everyone else. The multipart size limit alone does
+     * not bound the work: short rows are cheap to send and expensive to process.
+     *
+     * <p>The web mirrors this number in batch-upload/constants.ts so the user
+     * gets an instant local error instead of a wasted upload; keep them in sync.
+     */
+    private static final int MAX_ROWS = 200;
 
     private final IContentIngestionService contentIngestionService;
 
@@ -47,10 +59,25 @@ public class BatchUploadServiceImpl implements IBatchUploadService {
                 return response;
             }
 
+            // Collect before ingesting: the cap has to reject the upload whole.
+            // Checking mid-loop would leave the first MAX_ROWS rows already
+            // persisted behind a 400, which is worse than not starting.
+            List<String> rows = new ArrayList<>();
             String line;
             while ((line = reader.readLine()) != null) {
+                rows.add(line);
+            }
+
+            if (rows.size() > MAX_ROWS) {
+                throw new ValidationException(
+                    "El archivo tiene " + rows.size() + " filas y el máximo es " + MAX_ROWS
+                    + ". Divídelo en varios archivos."
+                );
+            }
+
+            for (String row : rows) {
                 rowNum++;
-                String[] parts = parseCsvLine(line);
+                String[] parts = parseCsvLine(row);
                 if (parts.length < 2) {
                     errors.add(new BatchUploadError(rowNum, "Línea inválida: se esperaban 2 columnas (title,body)"));
                     continue;
@@ -77,6 +104,10 @@ public class BatchUploadServiceImpl implements IBatchUploadService {
                     errors.add(new BatchUploadError(rowNum, e.getMessage() != null ? e.getMessage() : "Error al procesar fila"));
                 }
             }
+        } catch (ValidationException e) {
+            // Must escape this catch-all: it is a rejected upload (400), not a
+            // bad row to report inside a 200 response.
+            throw e;
         } catch (Exception e) {
             errors.add(new BatchUploadError(rowNum + 1, "Error de lectura: " + e.getMessage()));
         }

@@ -63,6 +63,18 @@ class SearchControllerSemanticUnitTest {
     }
 
     @Test
+    void testRejectsOversizedPage() throws Exception {
+        // Worse here than on /contents: an unbounded size makes the database
+        // rank the whole corpus by vector distance for one request.
+        MvcResult result = mvc.perform(get("/search")
+                        .param("q", "test").param("mode", "semantic").param("size", "1000000"))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        assertApiError(result, HttpStatus.BAD_REQUEST, "VALIDATION_ERROR");
+    }
+
+    @Test
     void testEmptyQ() throws Exception {
         MvcResult result = mvc.perform(get("/search").param("q", "").param("mode", "semantic"))
                 .andExpect(status().isBadRequest())

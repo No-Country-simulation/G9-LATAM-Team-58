@@ -3,6 +3,7 @@ package com.G9_LATAM_TEAM_58.techapi.inference.controller;
 import com.G9_LATAM_TEAM_58.techapi.common.exception.InferenceUnavailableException;
 import com.G9_LATAM_TEAM_58.techapi.common.dto.SearchResponse;
 import com.G9_LATAM_TEAM_58.techapi.common.exception.ValidationException;
+import com.G9_LATAM_TEAM_58.techapi.common.util.Pagination;
 import com.G9_LATAM_TEAM_58.techapi.core.service.IKeywordSearchService;
 import com.G9_LATAM_TEAM_58.techapi.inference.service.ISemanticSearchService;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +35,8 @@ public class SearchController {
         if (q == null || q.isBlank()) {
             throw new ValidationException("El parámetro 'q' no puede estar vacío");
         }
+
+        Pagination.validate(page, size);
 
         if ("semantic".equalsIgnoreCase(mode)) {
             if (semanticSearchService == null) {

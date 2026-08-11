@@ -63,6 +63,17 @@ class ContentQueryControllerUnitTest {
     }
 
     @Test
+    void testRejectsOversizedPage() throws Exception {
+        // Used to be accepted verbatim and handed to the database as a single
+        // page over the whole table.
+        MvcResult result = mvc.perform(get("/contents").param("size", "1000000"))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        assertApiError(result, HttpStatus.BAD_REQUEST, "VALIDATION_ERROR");
+    }
+
+    @Test
     void testNotFound() throws Exception {
         when(contentQueryService.getContentById(anyString()))
                 .thenThrow(new NotFoundException("no"));

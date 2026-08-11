@@ -20,7 +20,7 @@ public class GlobalExceptionHandler {
         log.warn("Validation error: {}", ex.getMessage());
         return ResponseEntity
                 .badRequest()
-                .body(ApiError.of("VALIDATION_ERROR", ex.getMessage()));
+                .body(ApiError.of(ErrorCode.VALIDATION_ERROR, ex.getMessage()));
     }
 
     @ExceptionHandler(NotFoundException.class)
@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
         log.warn("Not found: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(ApiError.of("NOT_FOUND", ex.getMessage()));
+                .body(ApiError.of(ErrorCode.NOT_FOUND, ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
         log.warn("Method argument not valid: {}", message);
         return ResponseEntity
                 .badRequest()
-                .body(ApiError.of("VALIDATION_ERROR", message));
+                .body(ApiError.of(ErrorCode.VALIDATION_ERROR, message));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
         log.warn("Constraint violation: {}", message);
         return ResponseEntity
                 .badRequest()
-                .body(ApiError.of("VALIDATION_ERROR", message));
+                .body(ApiError.of(ErrorCode.VALIDATION_ERROR, message));
     }
 
     @ExceptionHandler(InferenceUnavailableException.class)
@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
         log.error("Inference service unavailable: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(ApiError.of("INTERNAL_ERROR", ex.getMessage()));
+                .body(ApiError.of(ErrorCode.INTERNAL_ERROR, ex.getMessage()));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
         log.warn("Max upload size exceeded: {}", ex.getMessage());
         return ResponseEntity
                 .badRequest()
-                .body(ApiError.of("VALIDATION_ERROR", "El archivo excede el tamaño máximo permitido"));
+                .body(ApiError.of(ErrorCode.VALIDATION_ERROR, "El archivo excede el tamaño máximo permitido"));
     }
 
     @ExceptionHandler(InferenceException.class)
@@ -76,7 +76,7 @@ public class GlobalExceptionHandler {
         log.error("Inference error: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiError.of("INTERNAL_ERROR", ex.getMessage()));
+                .body(ApiError.of(ErrorCode.INTERNAL_ERROR, ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
@@ -84,6 +84,6 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiError.of("INTERNAL_ERROR", "Error interno del servidor"));
+                .body(ApiError.of(ErrorCode.INTERNAL_ERROR, "Error interno del servidor"));
     }
 }
