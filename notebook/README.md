@@ -9,8 +9,10 @@ Notebook de entrega:
 ## Requisitos
 
 - Python, ejecutado en Google Colab (o Jupyter local con GPU/CPU equivalente).
-- Corpus `processed/*.jsonl` (train, test en inglés, test en español) ya
-  publicado en el bucket de Object Storage por [`data/`](../data/).
+- Corpus `processed/*.jsonl` (train, test en inglés, test en español), que
+  produce [`data/`](../data/). Está versionado en `data/processed/` y publicado
+  en el bucket de Object Storage; el notebook lo lee desde el bucket, porque
+  corre en Colab.
 
 ## Uso
 
@@ -55,9 +57,9 @@ Claves de `model.joblib`:
 `kmeans` y `umap_reducer` son modelos **ajustados**, no arrays precalculados: por eso
 `inference/` puede clusterizar y proyectar documentos nuevos en tiempo de request.
 
-El puntero `latest.txt` se sube el último: si apuntara a una versión cuyos ficheros
-aún se están subiendo, un servicio que arranque en ese intervalo cargaría algo que
-todavía no existe.
+`latest.txt` se sube el último, después de `model.joblib` y `corpus_index.npz`.
+El puntero solo pasa a una versión cuyos ficheros están completos en el bucket,
+que es lo que hace seguro arrancar `inference/` en cualquier momento.
 
 ## Contratos y fronteras
 
