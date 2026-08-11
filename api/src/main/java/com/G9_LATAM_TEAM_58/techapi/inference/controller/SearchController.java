@@ -28,7 +28,8 @@ public class SearchController {
             @RequestParam(defaultValue = "semantic") String mode,
             @RequestParam(required = false) String category,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0.5") double minSimilarity) {
 
         if (q == null || q.isBlank()) {
             throw new ValidationException("El parámetro 'q' no puede estar vacío");
@@ -40,7 +41,7 @@ public class SearchController {
                     "Base de datos no configurada. Use app.database.enabled=true"
                 );
             }
-            return semanticSearchService.search(q, category, page, size);
+            return semanticSearchService.search(q, category, page, size, minSimilarity);
         } else if ("keyword".equalsIgnoreCase(mode)) {
             if (keywordSearchService == null) {
                 throw new InferenceUnavailableException(

@@ -26,21 +26,22 @@ public class SemanticSearchServiceImpl implements ISemanticSearchService {
     }
 
     @Override
-    public SearchResponse search(String q, String category, int page, int size) {
+    public SearchResponse search(String q, String category, int page, int size, double minSimilarity) {
         long start = System.currentTimeMillis();
 
         EmbedResponse embedding = inferenceClient.embed(q, "query");
         String queryEmbeddingString = VectorUtils.toVectorString(embedding.getEmbedding());
         int offset = page * size;
+        double maxDistance = 1 - minSimilarity;
 
         List<Object[]> rows;
         long total;
         if (category != null && !category.isBlank()) {
-            rows = contentRepository.semanticSearchWithCategory(queryEmbeddingString, category, offset, size);
-            total = contentRepository.countByCategory(category);
+            rows = contentRepository.semanticSearchWithCategory(queryEmbeddingString, category, maxDistance, offset, size);
+            total = contentRepository.countBySimilarityAndCategory(queryEmbeddingString, category, maxDistance);
         } else {
-            rows = contentRepository.semanticSearch(queryEmbeddingString, offset, size);
-            total = contentRepository.countAll();
+            rows = contentRepository.semanticSearch(queryEmbeddingString, maxDistance, offset, size);
+            total = contentRepository.countBySimilarity(queryEmbeddingString, maxDistance);
         }
 
         List<SearchResult> results = rows.stream()
