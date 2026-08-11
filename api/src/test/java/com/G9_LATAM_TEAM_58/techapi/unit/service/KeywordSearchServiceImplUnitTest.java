@@ -44,7 +44,7 @@ class KeywordSearchServiceImplUnitTest {
         KeywordSearchServiceImpl service = new KeywordSearchServiceImpl(contentRepository);
 
         Object[] row1 = {"id-1", "title-1", "Backend"};
-        Page<Object[]> page = new PageImpl<>(List.of(row1), PageRequest.of(0, 2), 7);
+        Page<Object[]> page = new PageImpl<>(List.<Object[]>of(row1), PageRequest.of(0, 2), 7);
 
         when(contentRepository.keywordSearchWithCategory(eq("test"), eq("Backend"), any(PageRequest.class)))
                 .thenReturn(page);
