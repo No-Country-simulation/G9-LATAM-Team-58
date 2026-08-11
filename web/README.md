@@ -7,14 +7,21 @@ Habla solo con `api/` (HTTPS, JSON). **Nunca** con `inference/` directamente.
 
 ## Requisitos
 
-- Node 22
-- pnpm 11
+- Node 22 y pnpm 11, para desarrollar, testear y compilar el front.
+- Docker, para construir la imagen que sirve la web en la VM.
 
 ## Instalación
 
 ```bash
 cd web
 pnpm install
+```
+
+La imagen de despliegue se construye aparte, desde la raíz del repo, y hace su
+propio `pnpm install` dentro:
+
+```bash
+docker compose --profile web build web
 ```
 
 ## Configuración
@@ -36,12 +43,32 @@ navegador llama directo al API, lo cual funciona porque `CorsConfig` tiene
 
 ## Uso
 
+En local, el front se levanta con el servidor de Vite:
+
 ```bash
 pnpm dev
 ```
 
-Build de producción: `pnpm build`, servido por nginx (SPA fallback en
-`nginx.conf`).
+**Es la única pieza del proyecto que no corre en contenedor**, y por dos razones
+concretas. El servicio `web` de compose construye el bundle de producción, así
+que no da recarga en caliente; y arranca nginx con TLS, que carga el Certificado
+de Origen de Cloudflare desde `./certs`. Ese certificado vive solo en la VM
+—`certs/` está fuera del control de versiones porque contiene una clave
+privada—, de modo que sin él nginx no llega a arrancar:
+
+```
+[emerg] cannot load certificate "/etc/nginx/certs/mindloom.pem"
+```
+
+En la VM, donde el certificado sí está, ese servicio es el que sirve la web:
+
+```bash
+docker compose --profile web up
+```
+
+nginx sirve el bundle en los puertos 80 y 443, con fallback de SPA
+(`nginx.conf`) y proxy de `/api` al contenedor `api`. El perfil `web` lo mantiene
+fuera de un `docker compose up` normal, que levanta solo `api` e `inference`.
 
 ## Pruebas
 
