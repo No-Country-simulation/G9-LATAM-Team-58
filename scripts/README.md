@@ -16,6 +16,12 @@ servicio. No se despliegan.
 - Python
 - El wallet de la Autonomous Database, descomprimido en tu máquina.
 
+> **Excepción a Docker.** El resto del proyecto se levanta con `docker compose`;
+> esto no. Es una herramienta de un solo uso, fuera del ciclo de vida de los
+> servicios: se corre a mano desde la máquina de quien siembra, con su propio
+> wallet y su propia copia del `.npz`. No hay imagen ni servicio de compose para
+> ella.
+
 ## Instalación
 
 ```bash
@@ -85,23 +91,14 @@ seed_db/
 numpy. La JVM no puede leer eso, así que sembrar la tabla desde el `.npz` tiene
 que pasar por Python.
 
-### Las dos rutas que escriben `contents`, y en qué se diferencian
+`seed_db` es la única ruta que escribe `contents` en bloque. Lee el `.npz` y
+escribe directo en la base, sin pasos intermedios. Necesita el wallet y
+`oracledb` en la máquina que lo corre.
 
-Existe una segunda vía, la API expone
-[`POST /admin/seed`](../api/README.md#post-adminseed--carga-masiva-de-corpus):
-recibe documentos ya resueltos —con su `embedding`, `cluster_id`, `x`, `y`— en
-JSON, y los persiste vía JPA. Ninguna de las dos rutas está completa por sí
-sola:
-
-| Ruta | Qué hace | Qué le falta |
-|---|---|---|
-| `seed_db` (este paquete) | Lee el `.npz` directamente y escribe con `oracledb` | Necesita el wallet y `oracledb` instalados en la máquina que lo corre |
-| `POST /admin/seed` | Persiste documentos que ya vienen con embedding, vía JPA | Necesita un cliente que parsee el `.npz` y se lo envíe — **ese cliente no existe todavía** |
-
-Hoy `seed_db` es la única ruta que funciona de punta a punta: lee el `.npz` y
-escribe directo en la base, sin pasos intermedios. Cuál de las dos queda como la
-canónica es una decisión de arquitectura pendiente, no algo que resuelva este
-documento.
+La API no siembra: sus rutas de escritura ingieren un contenido a la vez
+(`POST /content`) o una carga acotada desde CSV (`POST /contents/batch`), y en
+ambas es `inference/` quien calcula el embedding. Aquí los vectores ya vienen
+resueltos dentro del `.npz`.
 
 ### Otras reglas
 
