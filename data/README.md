@@ -51,9 +51,8 @@ y otras credenciales: ver [`scripts/`](../scripts/README.md).
   {"id":"...","title":"...","body":"...","category":"...","source":"...","url":"...","language":"es"}
   ```
 
-- Cada línea lleva además `quality` (score o reacciones del documento de origen). Es
-  un campo **interno del ETL**: alimenta el muestreo ponderado del balanceo y no se
-  persiste en la tabla `contents`.
+- Siete campos por línea, ni uno más. El `quality` que el notebook usa para el
+  muestreo ponderado del balanceo es interno del ETL y no llega al fichero.
 
 ## Contratos y fronteras
 

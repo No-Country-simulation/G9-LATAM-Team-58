@@ -15,8 +15,8 @@ services:
     expose:
       - "8000"
     environment:
-      # Filled in once the service downloads the artifact at startup.
-      OCI_NAMESPACE: ${OCI_NAMESPACE:-}
+      # Bucket holding the artifact. The Object Storage namespace is NOT passed
+      # in: oci_client.load_model() resolves it at runtime via get_namespace().
       MODEL_BUCKET: ${MODEL_BUCKET:-techmind-data}
     networks: [techmind]
 
