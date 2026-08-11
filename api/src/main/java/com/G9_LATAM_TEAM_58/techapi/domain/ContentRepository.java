@@ -77,6 +77,11 @@ public interface ContentRepository extends JpaRepository<Content, String> {
             nativeQuery = true)
     Page<Object[]> keywordSearch(@Param("q") String q, Pageable pageable);
 
+    @Query(value = "SELECT id, title, category FROM contents WHERE category = :category AND (title LIKE %:q% OR body LIKE %:q%)",
+            countQuery = "SELECT COUNT(*) FROM contents WHERE category = :category AND (title LIKE %:q% OR body LIKE %:q%)",
+            nativeQuery = true)
+    Page<Object[]> keywordSearchWithCategory(@Param("q") String q, @Param("category") String category, Pageable pageable);
+
     @Query(value = """
         SELECT id, title, category, x, y
         FROM contents

@@ -25,11 +25,11 @@ services:
       context: ./api
     image: techmind-api:local
     restart: unless-stopped
-    # Kept published for now so teammates can hit the API directly while the
-    # front is being built. Once everything goes through nginx (/api proxy),
-    # this can drop to `expose` and 8080 can close in the Security List.
-    ports:
-      - "8080:8080"
+    # Not published: everything reaches the API through nginx (/api proxy) now
+    # that mindloom.lat is live. Port 8080 is closed in the Security List too --
+    # an open 8080 would bypass Cloudflare and expose the origin IP.
+    expose:
+      - "8080"
     environment:
       # 'db' profile turns on the DB-backed beans (app.database.enabled=true) --
       # without it the app runs in scaffold mode and every DB-backed endpoint
@@ -63,6 +63,12 @@ services:
     profiles: [web]
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      # Cloudflare Origin Certificate, generated once in the dashboard and left
+      # on the VM. Never in the repo -- the .key is a private key. Expected file
+      # names: mindloom.pem and mindloom.key (nginx.conf points at them).
+      - ./certs:/etc/nginx/certs:ro
     depends_on:
       - api
     networks: [techmind]

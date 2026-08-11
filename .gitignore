@@ -10,6 +10,12 @@
 wallet/
 *_wallet.zip
 
+# Cloudflare Origin Certificate for mindloom.lat. Lives on the VM, mounted into
+# the nginx container. The .key is a private key — never commit it.
+certs/
+*.pem
+*.key
+
 # Model artifacts and corpus index (local mirrors). They live on the OCI bucket
 # and the Autonomous Database — never commit them.
 model/
