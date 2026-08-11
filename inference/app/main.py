@@ -15,12 +15,21 @@ from app.schemas import (
     PredictResponse,
 )
 
-APP_STATE = {
-    "model_loaded": False,
-    "meta": None,
-    "kmeans": None,
-    "umap": None
-}
+
+def _initial_state() -> dict:
+    """The state of a service that has not loaded the artifact yet.
+
+    Shutdown resets to this instead of emptying the dict: every guard reads
+    APP_STATE["model_loaded"], and a cleared dict would make them raise KeyError
+    (a 500) where the honest answer is 503.
+    """
+    return {
+        "model_loaded": False,
+        "meta": None
+    }
+
+
+APP_STATE = _initial_state()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,13 +40,36 @@ async def lifespan(app: FastAPI):
     APP_STATE["model"] = artifact
     APP_STATE["encoder"] = SentenceTransformer(artifact["meta"]["embedding_model"])
     APP_STATE["meta"] = artifact["meta"]
-    APP_STATE["kmeans"] = artifact.get("kmeans")
-    APP_STATE["umap"] = artifact.get("umap")
     APP_STATE["model_loaded"] = True
+
+    _warm_up()
 
     yield
 
     APP_STATE.clear()
+    APP_STATE.update(_initial_state())
+
+
+def _warm_up() -> None:
+    """Run one throwaway inference so the first real request is not the one that
+    pays for lazy initialization.
+
+    The transformer defers building its graph until the first encode, and UMAP
+    likewise on the first transform -- together that is several seconds. The
+    Cloudflare Free plan drops the connection at 100s, so a cold /predict right
+    after a container restart can surface as a 524 to the user.
+
+    Best effort on purpose: a failure here must not stop a service whose model
+    already loaded and validated above.
+    """
+    try:
+        model = APP_STATE["model"]
+        vector = APP_STATE["encoder"].encode(["passage: warm up"], normalize_embeddings=True)
+        model["classifier"].predict_proba(build_features(vector, "warm up", model))
+        model["kmeans"].predict(vector)
+        model["umap_reducer"].transform(vector)
+    except Exception as error:  # noqa: BLE001 -- see docstring: best effort by design
+        print(f"Warm-up falló, el servicio sigue arriba: {error}")
 
 
 app = FastAPI(title = "TechMind Inference Service", lifespan = lifespan)
@@ -47,10 +79,15 @@ app = FastAPI(title = "TechMind Inference Service", lifespan = lifespan)
 async def health_check():
     charged_model = APP_STATE.get("model_loaded", False)
 
+    # Report the artifact's own version, not a literal: /health is how the API
+    # and the deploy smoke test tell which model the container is actually
+    # serving. A hardcoded "v1" would keep saying v1 after a v2 rollout.
+    meta = APP_STATE.get("meta")
+
     return {
         "status": "ok" if charged_model else "error",
         "model_loaded": charged_model,
-        "version": "v1"
+        "version": meta["version"] if meta else None
     }
 
 @app.get("/model/info", response_model = ModelInfoResponse)
@@ -97,6 +134,12 @@ async def predict(request: PredictRequest):
 
 @app.post("/embed", response_model = EmbedResponse)
 async def embed(request: EmbedRequest):
+
+    # Same guard as /predict and /model/info. Without it a call before the
+    # artifact is loaded raises KeyError on APP_STATE["encoder"] and surfaces as
+    # a 500, hiding a plain "not ready yet" behind a server error.
+    if not APP_STATE["model_loaded"]:
+        raise HTTPException(status_code = 503, detail = "Model Not Found")
 
     formatted_text = f"{request.type}: {request.text}"
     vector = APP_STATE["encoder"].encode(formatted_text, normalize_embeddings=True)

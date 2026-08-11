@@ -24,18 +24,16 @@ Importante mencionar que solo se comunica con el servicio `api/`, no realiza pet
 
 ## Requisitos
 
-- Python 3.12
-- Torch, en su build de CPU (ver
-  [CONTRIBUTING.md](../CONTRIBUTING.md)).
+- Docker.
+
+Todo corre en contenedor. La imagen instala Torch en su build de CPU y hornea el
+transformer al construirse (ver [CONTRIBUTING.md](../CONTRIBUTING.md)); no hace
+falta Python ni un entorno virtual en la máquina.
 
 ## Instalación
 
 ```bash
-cd inference
-python -m venv .venv && source .venv/bin/activate # (Unix/Linux)
-.venv\Scripts\activate # (Windows)
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-pip install -r requirements.txt
+docker compose build inference
 ```
 
 ## Configuración
@@ -45,31 +43,59 @@ pip install -r requirements.txt
 | `MODEL_BUCKET` | en producción | bucket de OCI Object Storage con `model.joblib` |
 | `MODEL_LOCAL_PATH` | no | variable de entorno para ejecución local — ver abajo |
 
-**Ejecución en local** Si `MODEL_LOCAL_PATH` apunta a un archivo existente (por
-ejemplo `models/model.joblib`, copiado a mano y ya cubierto por `.gitignore`),
-`load_model()` lo carga directo y **no** toca OCI — no hace falta
-`~/.oci/config` para levantar el servicio en local. Sin la env var (o si el
-archivo no existe), el servicio descarga el artefacto del bucket al arrancar.
-Ver `.env.example`.
+**Ejecución en local.** La autenticación con Instance Principal solo funciona
+dentro de una instancia de OCI: fuera, el firmante no alcanza el endpoint de
+metadatos. Para levantar el servicio en tu máquina, baja `model.joblib` del
+bucket y móntalo en el contenedor con `MODEL_LOCAL_PATH` apuntando a él, en
+`docker-compose.override.yml`:
+
+```yaml
+services:
+  inference:
+    environment:
+      MODEL_LOCAL_PATH: /model/model.joblib
+    volumes:
+      - "/ruta/a/tu/carpeta:/model:ro"
+```
+
+Si esa ruta existe, `load_model()` la carga directo y **no** toca OCI. Sin la
+variable, el servicio descarga el artefacto del bucket al arrancar.
 
 ## Uso
 
 ```bash
-uvicorn app.main:app --reload --env-file .env
+docker compose up inference
 ```
 
-Sirve en `http://localhost:8000`. Catálogo completo de rutas en
-[Referencia de la API](#referencia-de-la-api).
+Sirve en `http://localhost:8000` (el puerto lo publica
+`docker-compose.override.yml`; en la VM queda interno y solo lo alcanza `api/`).
+Tarda unos 50 s en quedar `healthy`: carga el artefacto y hace una inferencia de
+calentamiento para que la primera petición real no pague la inicialización.
+
+Catálogo completo de rutas en [Referencia de la API](#referencia-de-la-api).
 
 ## Pruebas
 
 ```bash
-pip install -r requirements-dev.txt
-pytest
+docker run --rm -v "$PWD/inference:/src" -w /src techmind-inference:local \
+  sh -c "pip install -q -r requirements-dev.txt && ruff check . && pytest -q"
 ```
 
-`requirements-dev.txt` es solo para dev/CI — no se referencia ni utiliza en la imagen Docker
-(`Dockerfile` instala únicamente `requirements.txt`).
+Desde la raíz del repo, con la imagen ya construida. `requirements-dev.txt`
+(ruff, pytest, httpx) es solo para dev y CI: el `Dockerfile` instala únicamente
+`requirements.txt`, por eso el comando los añade sobre la marcha.
+
+En **Git Bash sobre Windows** hacen falta dos ajustes:
+
+```bash
+MSYS_NO_PATHCONV=1 docker run --rm -v "$PWD/inference:/src" -w /src techmind-inference:local \
+  sh -c "pip install -q -r requirements-dev.txt && ruff check . --ignore EXE002 && pytest -q"
+```
+
+`MSYS_NO_PATHCONV=1` evita que Git Bash reescriba `/src` a una ruta de Windows.
+`--ignore EXE002` descarta un aviso que solo aparece ahí: el bind mount presenta
+los ficheros como ejecutables y ruff los reclama por no tener shebang. En CI, que
+corre sobre Linux, ninguno de los dos hace falta.
 
 ## Contratos y fronteras
 
@@ -80,9 +106,9 @@ pytest
 - **Stateless:** no toca la base de datos y no mantiene ningún índice. Lo
   único que carga es el artefacto (modelo + tokenizer).
 - Las claves de `model.joblib` y cómo se generan están en
-  [`notebook/README.md`](../notebook/README.md). El transformer **no** va
-  dentro del `.joblib` únicamente su nombre; la imagen Docker lo construye en tiempo
-  de ejecución para que el contenedor arranque sin red.
+  [`notebook/README.md`](../notebook/README.md). El transformer **no** va dentro
+  del `.joblib`, solo su nombre: la imagen Docker lo descarga **al construirse**,
+  y por eso el contenedor arranca sin red.
 - **No hay reentrenamiento.** El clasificador es una `LogisticRegression` y el
   artefacto se sustituye publicando una versión nueva en el bucket.
 - **Errores (FastAPI):** validación de entrada → `422` con
@@ -140,6 +166,8 @@ pytest
 
 Este endpoint aplica el prefijo `"passage: "`, siempre.
 
+**Errores:** `503` si el modelo no está cargado.
+
 ### `POST /embed` — vectorizar una consulta
 
 Solo el vector. Lo usa `GET /search?mode=semantic` de la API, que después lanza el
@@ -162,6 +190,8 @@ Solo el vector. Lo usa `GET /search?mode=semantic` de la API, que después lanza
 { "embedding": [0.021, -0.118, "…384 floats…"] }
 ```
 
+**Errores:** `503` si el modelo no está cargado.
+
 ### `GET /health` — estado
 
 **Recibe:** (sin parámetros).
@@ -171,6 +201,11 @@ Solo el vector. Lo usa `GET /search?mode=semantic` de la API, que después lanza
 ```json
 { "status": "ok", "model_loaded": true, "version": "v1" }
 ```
+
+Responde `200` también mientras el artefacto no está cargado —es lo que
+distingue "arrancando" de "roto"— y entonces `status` es `"error"`,
+`model_loaded` es `false` y `version` es `null`. `version` sale del `meta` del
+artefacto, así que refleja la versión que el contenedor sirve de verdad.
 
 ### `GET /model/info` — metadatos del modelo
 
@@ -185,26 +220,27 @@ Solo el vector. Lo usa `GET /search?mode=semantic` de la API, que después lanza
   "dim": 384,
   "feature_dim": 884,
   "svd_components": 500,
-  "classifier_c": 4.0,
+  "classifier_c": 1,
   "doc_prefix": "passage: ",
   "query_prefix": "query: ",
-  "categories": ["Backend", "Frontend", "Móvil", "Datos e IA", "DevOps y Cloud", "Bases de datos", "Seguridad", "Fundamentos"],
+  "categories": ["Backend", "Bases de datos", "Datos e IA", "DevOps y Cloud", "Frontend", "Fundamentos", "Móvil", "Seguridad"],
   "n_clusters": 8,
-  "terms_by_category": { "Backend": ["spring", "java", "…10 términos…"], "…": [] },
+  "terms_by_category": { "Backend": ["laravel", "net", "spring", "spring boot", "…10 términos…"], "…": [] },
   "metrics": {
-    "embedding_macro_f1_en": 0.0,
-    "embedding_macro_f1_es": 0.0,
-    "tfidf_macro_f1_en": 0.0,
-    "tfidf_macro_f1_es": 0.0,
-    "embedding_macro_f1_es_reliable": 0.0,
+    "embedding_macro_f1_en": 0.7942,
+    "embedding_macro_f1_es": 0.7581,
+    "tfidf_macro_f1_en": 0.7841,
+    "tfidf_macro_f1_es": 0.7467,
+    "embedding_macro_f1_es_reliable": 0.7581,
     "es_reliable_categories": 8,
     "es_min_support": 30
   },
-  "train_size": 0
+  "train_size": 12800
 }
 ```
 
-Son las 13 claves del bloque `meta`, tal cual las serializa el notebook. Las métricas
+Son las 13 claves del bloque `meta`, tal cual las serializa el notebook — los
+valores de arriba son los del artefacto `v1` que sirve el contenedor. Las métricas
 en inglés llegan como `null` si el artefacto se entrenó sin `test_corpus.jsonl`: ese
 conjunto es opcional y su ausencia no invalida el modelo.
 
