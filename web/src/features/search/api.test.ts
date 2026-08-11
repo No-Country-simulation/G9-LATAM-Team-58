@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw/server';
 import { apiPath } from '@/test/msw/handlers';
 import type { SearchResponse } from '@/shared/api/contracts';
-import { DEFAULT_SEARCH_PAGE_SIZE, searchContents } from './api';
+import { DEFAULT_MIN_SIMILARITY, DEFAULT_SEARCH_PAGE_SIZE, searchContents } from './api';
 
 describe('searchContents', () => {
 	it('sends q/mode/category/page/size and returns the typed response', async () => {
@@ -25,6 +25,7 @@ describe('searchContents', () => {
 		expect(capturedUrl?.searchParams.get('category')).toBe('Backend');
 		expect(capturedUrl?.searchParams.get('page')).toBe('2');
 		expect(capturedUrl?.searchParams.get('size')).toBe(String(DEFAULT_SEARCH_PAGE_SIZE));
+		expect(capturedUrl?.searchParams.get('minSimilarity')).toBe(String(DEFAULT_MIN_SIMILARITY));
 	});
 
 	it('defaults page to 0 and size to DEFAULT_SEARCH_PAGE_SIZE', async () => {
