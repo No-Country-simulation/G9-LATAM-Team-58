@@ -40,3 +40,22 @@ jobs:
             docker compose --profile web up -d --remove-orphans
             docker image prune -f
             docker compose ps
+
+            # Smoke test: without it the job goes green whenever the containers
+            # merely started, even if the API is failing every request. Give it
+            # room -- inference downloads the artifact from the bucket and warms
+            # the transformer before it answers.
+            echo "Esperando a que la API responda..."
+            for attempt in $(seq 1 30); do
+              # Probed from inside the container on purpose: 8080 is not
+              # published to the host, so the VM cannot curl it directly.
+              if docker compose exec -T api curl -fsS http://localhost:8080/health > /dev/null 2>&1; then
+                echo "API arriba tras ${attempt} intento(s)."
+                exit 0
+              fi
+              sleep 10
+            done
+
+            echo "La API no respondió en 5 minutos. Últimos logs:"
+            docker compose logs --tail 50 api inference
+            exit 1

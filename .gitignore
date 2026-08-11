@@ -1,4 +1,4 @@
-# === Hard rules: never commit models, datasets or secrets, anywhere in the repo ===
+# === Hard rules: never commit models or secrets, anywhere in the repo ===
 *.joblib
 *.jsonl
 *.csv
@@ -21,6 +21,11 @@ certs/
 model/
 models/
 processed/
+
+# One deliberate exception to the two rules above: the processed corpus IS
+# versioned. It is declared in data/.gitignore, not here — the .gitignore
+# closest to a file wins, so a negation written at this level would be
+# overridden by data/.gitignore and silently do nothing.
 
 # Local-only compose override (publishes inference:8000 for dev). Never on the VM.
 docker-compose.override.yml

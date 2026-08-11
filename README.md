@@ -69,7 +69,6 @@ completo, y no solo una muestra, entra en cada búsqueda.
 | [data/](data/) | Construcción del corpus: extracción, limpieza y etiquetado. | Python |
 | [notebook/](notebook/) | Entrenamiento y evaluación; serializa el modelo y el índice del corpus. | Python · scikit-learn · sentence-transformers |
 | [scripts/](scripts/) | Herramientas operativas de un solo uso (sembrar la base de datos). | Python |
-| [docs/](docs/) | Especificación del proyecto, contratos entre capas y guías de infraestructura. | Markdown |
 
 Infraestructura: Docker, Oracle Autonomous Database (AI Vector Search), Oracle
 Cloud Infrastructure (OCI). Los identificadores de esa infraestructura —el
@@ -79,25 +78,27 @@ ganar nada.
 
 ## Empezar
 
-Requisitos: Java 25, Python 3.12, Node 22, pnpm 11, Docker.
+Requisitos: **Docker**. Además Node 22 y pnpm 11 si vas a desarrollar la web con
+recarga en caliente, la única pieza que no corre en contenedor.
 
 ```bash
+cp .env.example .env       # y rellenar
 docker compose up          # levanta api + inference
-cd web && pnpm dev         # levanta la web
 ```
+
+`api` e `inference` necesitan dos cosas que no están en el repo: el wallet de la
+Autonomous Database y el `model.joblib` del bucket. Dónde vive cada uno en tu
+máquina se declara en `docker-compose.override.yml`, que Docker Compose fusiona
+solo y que está fuera del control de versiones — las rutas son de cada quien.
+Los README de [api/](api/) e [inference/](inference/) traen el detalle.
+
+La web es la única pieza que en local no corre en contenedor: `cd web && pnpm dev`.
+El servicio `web` de compose sirve el bundle de producción con nginx y TLS, y
+necesita el Certificado de Origen de Cloudflare, que solo está en la VM — ver
+[web/README.md](web/README.md).
 
 Cada carpeta documenta su propia configuración, sus variables de entorno y sus
 pruebas en su README — ver la tabla de arriba.
-
-## Estado del proyecto
-
-| Área | Estado |
-|---|---|
-| Corpus y etiquetado | Completo |
-| Modelo (clasificación + embeddings) | Completo |
-| API | En desarrollo |
-| Web | En desarrollo |
-| Despliegue en OCI | En desarrollo |
 
 ## Cómo contribuir
 
