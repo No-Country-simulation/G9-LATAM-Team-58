@@ -31,13 +31,19 @@ y otras credenciales: ver [`scripts/`](../scripts/README.md).
 
 ## Expone
 
-- Tres ficheros subidos al bucket de Object Storage (no se commitean):
+- Tres ficheros, versionados en `data/processed/` y subidos también al bucket de
+  Object Storage:
 
   | Fichero | Para qué |
   |---|---|
   | `processed/train_corpus.jsonl` | entrenamiento |
   | `processed/test_corpus.jsonl` | evaluación en inglés |
   | `processed/test_corpus_es.jsonl` | evaluación en español (transferencia cross-lingual) |
+
+  Son la excepción a la regla de no commitear datasets, declarada en
+  `data/.gitignore`: entran al repo para que las métricas del entrenamiento se
+  puedan reproducir sin credenciales del bucket. Cualquier otro `.jsonl` sigue
+  ignorado.
 
 - Esquema por línea (JSONL), nombres de campo en inglés:
 
