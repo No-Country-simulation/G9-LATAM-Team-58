@@ -21,12 +21,13 @@ consultar.
 
 ## 💡 Qué hace
 
-- 📚**Clasificación temática** — asigna cada contenido a una de 8 categorías.
-- 🔑**Extracción de palabras clave** — identifica los términos más relevantes.
-- 🔗**Contenidos relacionados** — recomienda material semánticamente parecido.
-- 🔍**Búsqueda semántica** — encuentra por significado, no solo por coincidencia de palabras.
-- 🗺️**Mapa del conocimiento** — visualiza todo el corpus en 2D, coloreado por categoría.
-- 📈**Base que crece** — indexado incremental: cada nuevo contenido enriquece las recomendaciones.
+Clasifica cada contenido en una de 8 categorías y le extrae las palabras clave.
+A partir de ahí puedes buscar por significado y no solo por coincidencia de
+palabras, ver qué contenidos se parecen entre sí, y mirar el corpus entero en un
+mapa 2D coloreado por categoría.
+
+Todo lo que entra queda indexado en el momento, así que cada contenido nuevo
+mejora las recomendaciones de los siguientes.
 
 ## 🧩 Categorías
 
@@ -54,7 +55,7 @@ numérica de su significado (un embedding). La API guarda el contenido, su
 categoría, sus palabras clave y ese embedding en la base de datos.
 
 A partir de ahí, ese contenido ya es candidato a aparecer como "relacionado" la
-próxima vez que alguien busque algo parecido — sea por texto libre o porque otro
+próxima vez que alguien busque algo parecido, sea por texto libre o porque otro
 contenido nuevo se le acerca en significado. La comparación de significados la
 resuelve la propia base de datos, no un proceso aparte: por eso el corpus
 completo, y no solo una muestra, entra en cada búsqueda.
@@ -89,16 +90,16 @@ docker compose up          # levanta api + inference
 `api` e `inference` necesitan dos cosas que no están en el repo: el wallet de la
 Autonomous Database y el `model.joblib` del bucket. Dónde vive cada uno en tu
 máquina se declara en `docker-compose.override.yml`, que Docker Compose fusiona
-solo y que está fuera del control de versiones — las rutas son de cada quien.
-Los README de [api/](api/) e [inference/](inference/) traen el detalle.
+solo y que está fuera del control de versiones, porque las rutas son de cada
+quien. Los README de [api/](api/) e [inference/](inference/) traen el detalle.
 
 La web es la única pieza que en local no corre en contenedor: `cd web && pnpm dev`.
 El servicio `web` de compose sirve el bundle de producción con nginx y TLS, y
-necesita el Certificado de Origen de Cloudflare, que solo está en la VM — ver
-[web/README.md](web/README.md).
+necesita el Certificado de Origen de Cloudflare, que solo está en la VM
+([web/README.md](web/README.md)).
 
 Cada carpeta documenta su propia configuración, sus variables de entorno y sus
-pruebas en su README — ver la tabla de arriba.
+pruebas en su README, según la tabla de arriba.
 
 ## Cómo contribuir
 
@@ -107,4 +108,4 @@ El flujo de ramas, la convención de commits y las reglas de cada capa están en
 
 ## Licencia
 
-MIT — ver [LICENSE](LICENSE).
+MIT. El texto completo está en [LICENSE](LICENSE).

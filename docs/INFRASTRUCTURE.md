@@ -17,7 +17,7 @@ de datos: la persistencia es la Autonomous AI Database gestionada.
 
 ```mermaid
 flowchart LR
-    B["Navegador"] -->|HTTPS| CF["Cloudflare<br/>DNS proxied · Full (strict)"]
+    B["Navegador"] -->|HTTPS| CF["Cloudflare · DNS proxied · Full (strict)"]
     CF -->|HTTPS 443| NG["nginx"]
 
     subgraph VM ["VM · Ampere A1 · aarch64"]
@@ -47,20 +47,27 @@ TLS termina dos veces. Navegador contra Cloudflare, y Cloudflare contra nginx.
 
 ```mermaid
 flowchart TD
-    PR["push a dev"] --> CI["CI · 3 jobs filtrados por carpeta"]
+    F["feature/tm-NN-..."] -->|PR| DEV["dev"]
+    DEV -->|"PR + 1 aprobación"| MAIN["main"]
+
+    F -.->|"dispara CI"| CI["CI · 3 jobs filtrados por carpeta"]
+    DEV -.->|"dispara CI"| CI
     CI --> CIA["api: mvnw verify"]
     CI --> CII["inference: ruff + pytest"]
     CI --> CIW["web: lint + test + build"]
 
-    MAIN["push a main"] --> DEP["Deploy"]
-    DEP --> SSH["SSH a la VM"]
+    MAIN -.->|"dispara Deploy"| SSH["SSH a la VM"]
     SSH --> RESET["git reset --hard origin/main"]
     RESET --> BUILD["docker compose --profile web build"]
     BUILD --> UP["up -d --remove-orphans"]
     UP --> SMOKE{"/health responde?"}
     SMOKE -->|sí| OK["job en verde"]
-    SMOKE -->|no, tras 5 min| FAIL["logs de api e inference<br/>y job en rojo"]
+    SMOKE -->|no, tras 5 min| FAIL["vuelca logs y falla el job"]
 ```
+
+Nadie hace push a `main`. El despliegue arranca cuando se fusiona el PR de `dev`,
+que es lo que GitHub registra como un push sobre esa rama. CI corre dos veces
+antes de eso: al abrir el PR contra `dev` y al abrirlo contra `main`.
 
 **Se construye en la VM, no en el runner.** La VM es aarch64 y los runners de
 GitHub son x86; una imagen x86 en esa máquina falla al arrancar con

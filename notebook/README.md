@@ -21,7 +21,7 @@ credenciales de Object Storage se leen de Colab Secrets, no de un `.env`.
 
 ## Configuración
 
-`random_state=42` en cada split, modelo y llamada a UMAP — sin fijarlo, dos
+`random_state=42` en cada split, modelo y llamada a UMAP. Sin fijarlo, dos
 ejecuciones del mismo código dan métricas distintas.
 
 ## Expone
@@ -35,7 +35,7 @@ Tres ficheros en `models/v{N}/` del bucket de Object Storage:
 | `latest.txt` | la versión activa | `inference/`, para saber qué descargar |
 
 `corpus_index.npz` trae dos arrays: `embeddings` (`float32[N, 384]`, L2-normalizados)
-y `metadata`, con una entrada por columna de la tabla `contents` — `id`, `title`,
+y `metadata`, con una entrada por columna de la tabla `contents`: `id`, `title`,
 `body`, `category`, `source`, `url`, `language`, `keywords`, `cluster`, `x`, `y`.
 `body` viaja en el índice porque `contents.body` es `NOT NULL`, y `cluster` se llama
 `cluster_id` en la base: `CLUSTER` es palabra reservada en Oracle.
@@ -65,7 +65,7 @@ que es lo que hace seguro arrancar `inference/` en cualquier momento.
 
 - Los vectores del corpus **no van dentro del `.joblib`**: viven en la base de datos,
   que es donde crece el contenido. El `.joblib` solo se regenera al reentrenar.
-- El transformer tampoco viaja en el artefacto — solo su nombre. La imagen de
+- El transformer tampoco viaja en el artefacto, solo su nombre. La imagen de
   `inference/` lo hornea al construirse.
 - Prefijos E5 (`passage:` para contenido, `query:` para consultas), embeddings
   L2-normalizados float32, `random_state=42`, métrica macro-F1.

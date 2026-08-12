@@ -37,12 +37,12 @@ cp .env.example .env   # y rellenar
 
 | Variable | Requerida | Para qué |
 |---|---|---|
-| `SPRING_DATASOURCE_URL` | sí | mismo DSN que usa `api/` — de ahí sale el alias TNS |
+| `SPRING_DATASOURCE_URL` | sí | mismo DSN que usa `api/` (de ahí sale el alias TNS) |
 | `SPRING_DATASOURCE_USERNAME` | sí | usuario de la base |
 | `SPRING_DATASOURCE_PASSWORD` | sí | contraseña de la base |
 | `TNS_ADMIN` | sí | ruta al wallet descomprimido **en tu máquina** |
 | `WALLET_PASSWORD` | solo si el wallet se descargó con contraseña | — |
-| `CORPUS_INDEX_PATH` | no | ruta a `corpus_index.npz`, en cualquier parte del disco — ver `--index` abajo |
+| `CORPUS_INDEX_PATH` | no | ruta a `corpus_index.npz`, en cualquier parte del disco (ver `--index` abajo) |
 
 Si ya tienes el `.env` de la raíz relleno (el que usa Docker Compose), puedes
 reutilizarlo en vez de duplicar credenciales: `--env ../.env`.

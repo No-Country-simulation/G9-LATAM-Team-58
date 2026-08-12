@@ -66,18 +66,14 @@ sequenceDiagram
     participant INF as inference
     participant DB as base
 
-    rect rgb(240, 246, 252)
-    note right of Tú: mode=semantic
-    Tú->>API: GET /search?q=...&mode=semantic
-    API->>INF: POST /embed (type: query)
-    INF-->>API: vector[384]
-    API->>DB: VECTOR_DISTANCE ... COSINE
-    end
-
-    rect rgb(252, 246, 240)
-    note right of Tú: mode=keyword
-    Tú->>API: GET /search?q=...&mode=keyword
-    API->>DB: title LIKE %q% OR body LIKE %q%
+    alt mode=semantic
+        Tú->>API: GET /search?q=...&mode=semantic
+        API->>INF: POST /embed (type: query)
+        INF-->>API: vector[384]
+        API->>DB: VECTOR_DISTANCE ... COSINE
+    else mode=keyword
+        Tú->>API: GET /search?q=...&mode=keyword
+        API->>DB: title LIKE %q% OR body LIKE %q%
     end
 ```
 

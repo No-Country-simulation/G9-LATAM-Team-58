@@ -156,7 +156,7 @@ resuelven **solo con la base de datos**.
 `GET /contents?category=`, `GET /contents/{id}/related`, `GET /search?mode=keyword`,
 `GET /map`, `GET /stats`.
 
-Dos cosas que sorprenden a primera vista:
+Leyendo esa tabla saltan dos preguntas:
 
 - **`POST /content` hace una sola llamada.** `POST /predict` devuelve la categoría
   *y* el `embedding`, el `cluster_id` y las coordenadas `x`/`y`. La API persiste todo
@@ -234,7 +234,7 @@ título.
 | `page` | int | 0 | paginación |
 | `size` | int | 20 | tamaño de página (máximo 100) |
 
-**Devuelve** `200 OK` — total y resúmenes:
+**Devuelve** `200 OK` con el total y los resúmenes:
 
 ```json
 {
@@ -270,7 +270,7 @@ GET /contents?page=2&size=50   -> paginado
 |---|---|---|
 | `id` | string | id del contenido (`devto-4821`, `usr-9f2c1e04`…) |
 
-**Devuelve** `200 OK` — el contenido completo:
+**Devuelve** `200 OK` con el contenido completo:
 
 ```json
 {
@@ -364,7 +364,7 @@ Coordenadas 2D (UMAP) de cada documento, para la nube de puntos.
 ]
 ```
 
-> Los puntos salen de las columnas `x`/`y` de la base — no pasan por inference. Los
+> Los puntos salen de las columnas `x`/`y` de la base y no pasan por inference. Los
 > contenidos añadidos en vivo con `POST /content` **sí aparecen** en el mapa: sus
 > coordenadas las calcula `umap_reducer.transform()` dentro de `POST /predict` y se
 > persisten con el resto.
@@ -451,7 +451,7 @@ las 200 filas.
 
 Sondeo de salud para orquestador/CI: responde **siempre `200 OK`** y reporta si
 `inference/` y la base de datos están alcanzables. No aparece en Swagger
-(oculto con `@Hidden`) — este es su único contrato.
+(oculto con `@Hidden`), así que este es su único contrato.
 
 **Recibe:** nada.
 

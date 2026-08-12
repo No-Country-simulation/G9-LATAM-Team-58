@@ -54,7 +54,7 @@ sequenceDiagram
 
     Web->>API: POST /content {title, body}
     API->>INF: POST /predict {text}
-    INF-->>API: category, probability, keywords,<br/>explanation, embedding[384], cluster_id, x, y
+    INF-->>API: category, probability, keywords, explanation, embedding[384], cluster_id, x, y
     API->>DB: INSERT en contents (todo menos el vector)
     API->>DB: UPDATE ... embedding = TO_VECTOR(?, 384, FLOAT32)
     API->>DB: SELECT ... ORDER BY VECTOR_DISTANCE (5 relacionados)
@@ -62,7 +62,7 @@ sequenceDiagram
     API-->>Web: 201 Created
 ```
 
-Dos cosas que sorprenden al leer el código:
+El código tiene dos detalles que no se ven en el diagrama:
 
 **Una sola llamada a inference.** `POST /predict` devuelve la categoría *y* el
 embedding, el cluster y las coordenadas del mapa. Pedir el vector aparte

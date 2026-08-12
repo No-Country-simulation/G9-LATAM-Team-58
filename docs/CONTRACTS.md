@@ -5,8 +5,8 @@ cualquiera de las tres por tu cuenta rompe el trabajo de alguien más.
 
 ```mermaid
 flowchart LR
-    C1["Contrato 1 · JSONL<br/>7 campos"] --> NB["notebook/"]
-    NB --> C2["Contrato 2 · model.joblib<br/>9 claves"]
+    C1["Contrato 1 · JSONL de 7 campos"] --> NB["notebook/"]
+    NB --> C2["Contrato 2 · model.joblib de 9 claves"]
     NB --> IDX["corpus_index.npz"]
     C2 --> INF["inference/"]
     IDX --> SEED["scripts/seed_db"]

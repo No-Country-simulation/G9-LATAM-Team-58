@@ -8,7 +8,7 @@ Notebook de entrega: [`TechMind_01_EDA_ETL.ipynb`](TechMind_01_EDA_ETL.ipynb).
 ## Requisitos
 
 - Python, ejecutado en Google Colab.
-- Credenciales de Kaggle, en Colab Secrets — el notebook de EDA/ETL no lee
+- Credenciales de Kaggle, en Colab Secrets. El notebook de EDA/ETL no lee
   ningún `.env`.
 
 ## Uso
@@ -21,11 +21,11 @@ y otras credenciales: ver [`scripts/`](../scripts/README.md).
 
 ## Fuentes
 
-- **Kaggle StackSample** (`stackoverflow/stacksample`) — preguntas de Stack Overflow
+- **Kaggle StackSample** (`stackoverflow/stacksample`). Preguntas de Stack Overflow
   en inglés, etiquetadas por votación ponderada de tags.
-- **API de Dev.to** — artículos técnicos en inglés y en español. Es el registro que
+- **API de Dev.to**. Artículos técnicos en inglés y en español. Es el registro que
   más se parece al contenido que Mindloom indexa.
-- **Volcados de Stack Exchange** (archive.org) — `es.stackoverflow.com` aporta
+- **Volcados de Stack Exchange** (archive.org). `es.stackoverflow.com` aporta
   español; `security`, `dba` y `softwareengineering` aportan las categorías con
   menos muestra, con el sitio como etiqueta.
 
@@ -56,7 +56,7 @@ y otras credenciales: ver [`scripts/`](../scripts/README.md).
 
 ## Contratos y fronteras
 
-- Categoría: **una sola** de las 8 — Backend · Frontend · Móvil · Datos e IA ·
+- Categoría: **una sola** de las 8. Backend · Frontend · Móvil · Datos e IA ·
   DevOps y Cloud · Bases de datos · Seguridad · Fundamentos. La rúbrica de etiquetado
   vive en el propio notebook, en `CATEGORY_TAGS`. JSONL, no CSV.
 - **Los siete campos del esquema son obligatorios, incluidos `source` y `language`.**

@@ -37,7 +37,7 @@ Para apuntar a otro API (IP pública, VM, otra máquina de la LAN), copia
 VITE_API_URL=http://<ip>:8080
 ```
 
-Sin sufijo `/api` — la API sirve en rutas raíz (`/search`, `/contents`...). El
+Sin sufijo `/api`: la API sirve en rutas raíz (`/search`, `/contents`...). El
 navegador llama directo al API, lo cual funciona porque `CorsConfig` tiene
 `allowedOrigins("*")`.
 
@@ -73,7 +73,7 @@ fuera de un `docker compose up` normal, que levanta solo `api` e `inference`.
 ## Pruebas
 
 ```bash
-pnpm test            # toda la suite, una vez — es lo que corre CI
+pnpm test            # toda la suite, una vez; es lo que corre CI
 pnpm test:watch      # modo watch, para desarrollo
 pnpm test:coverage   # informe de cobertura (sin umbral)
 
@@ -96,7 +96,7 @@ alias `@/` y los plugins. Los tests quedan excluidos de `tsconfig.app.json` para
 que `pnpm build` no los compile, y cubiertos por `tsconfig.test.json`, que
 `pnpm typecheck` sí incluye.
 
-Dos cosas que no son obvias, ambas descubiertas a base de tests en rojo:
+Hay dos trampas en esa configuración, las dos aprendidas con tests en rojo:
 
 - **MSW intercepta por ruta, no por host** (`*/search`). El `VITE_API_URL` de tu
   `.env.local` también se carga en modo test, así que fijar el host en los
@@ -127,7 +127,7 @@ Reglas:
 
 - Dependencias en una sola dirección: `pages → features → {components, shared}`.
 - Un feature nunca importa de otro (excepción documentada: query keys para
-  invalidar tras mutaciones — `analyze` y `batch-upload` importan `contentKeys`
+  invalidar tras mutaciones: `analyze` y `batch-upload` importan `contentKeys`
   de `contents`).
 - Server state = TanStack Query. Zustand solo para UI state.
 - `src/shared/api/contracts.ts` es el espejo en TypeScript del contrato público

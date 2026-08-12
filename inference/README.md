@@ -1,11 +1,11 @@
 # inference/
 
 Servicio de inferencia **sin estado** de Mindloom: embeddings y clasificación.
-**No** toca la base de datos ni guarda el índice del corpus en memoria — el
+**No** toca la base de datos ni guarda el índice del corpus en memoria. El
 ranking por similitud lo resuelve la Autonomous Database con `VECTOR_DISTANCE`,
 orquestado por `api/`.
 
-Importante mencionar que solo se comunica con el servicio `api/`, no realiza peticiones a `web/`.
+Solo habla con `api/`. Nunca con `web/`.
 
 ## Contenido
 
@@ -133,7 +133,7 @@ corre sobre Linux, ninguno de los dos hace falta.
 |---|---|---|
 | `text` | string | sí |
 
-**Devuelve** `200 OK` — todo lo que la API necesita para persistir el contenido:
+**Devuelve** `200 OK` con todo lo que la API necesita para persistir el contenido:
 
 ```json
 {
@@ -159,7 +159,7 @@ corre sobre Linux, ninguno de los dos hace falta.
 | `x`, `y` | float | coordenadas UMAP, para el mapa del corpus |
 
 > **¿Por qué devuelve el embedding?** `cluster_id`, `x` e `y` salen de `kmeans` y
-> `umap_reducer`, que viven dentro del artefacto — la API Java no puede calcularlos.
+> `umap_reducer`, que viven dentro del artefacto, y la API Java no puede calcularlos.
 > Si tuviera que pedir la clasificación aquí y el vector a `POST /embed`, estaría realizando
 > **dos pasadas del encoder sobre el mismo texto**. Este
 > endpoint resuelve el camino de indexación completo en una sola llamada.
@@ -211,7 +211,7 @@ artefacto, así que refleja la versión que el contenedor sirve de verdad.
 
 **Recibe:** (sin parámetros).
 
-**Devuelve** `200 OK` — datos del artefacto cargado:
+**Devuelve** `200 OK` con los datos del artefacto cargado:
 
 ```json
 {
@@ -239,7 +239,7 @@ artefacto, así que refleja la versión que el contenedor sirve de verdad.
 }
 ```
 
-Son las 13 claves del bloque `meta`, tal cual las serializa el notebook — los
+Son las 13 claves del bloque `meta`, tal cual las serializa el notebook. Los
 valores de arriba son los del artefacto `v1` que sirve el contenedor. Las métricas
 en inglés llegan como `null` si el artefacto se entrenó sin `test_corpus.jsonl`: ese
 conjunto es opcional y su ausencia no invalida el modelo.
