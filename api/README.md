@@ -29,6 +29,25 @@ toca la base.
   - [`POST /contents/batch`](#post-contentsbatch--carga-por-lotes)
   - [`POST /admin/seed`](#post-adminseed--carga-masiva-de-corpus)
   - [`GET /health`](#get-health--estado-de-la-api-y-sus-dependencias)
+- [📚 Documentación](#documentación)
+  - [docs/architecture.md](docs/architecture.md) — Diagrama C4 nivel 3 (estilo Mermaid): cómo funciona la API por componentes
+  - [docs/endpoint-flows.md](docs/endpoint-flows.md) — Diagramas de flujo (sequence) por endpoint
+  - [docs/onboarding.md](docs/onboarding.md) — Guía de configuración / onboarding (wallet, arranque, curl, troubleshooting)
+
+## 📚 Documentación
+
+Guías complementarias a este README. Este documento es el **contrato público**
+(endpoints, variables, perfiles, pruebas); las guías explican cómo funciona la
+API por dentro y cómo arrancarla de cero:
+
+| Guía | Qué es |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | Diagrama C4 nivel 3 (estilo Mermaid): cómo funciona la API por componentes |
+| [docs/endpoint-flows.md](docs/endpoint-flows.md) | Diagramas de flujo (sequence) por endpoint |
+| [docs/onboarding.md](docs/onboarding.md) | Guía de configuración / onboarding: wallet de la ADB, arranque (Compose o Maven), verificación con curl y troubleshooting |
+
+Para ir de cero a una API corriendo, empieza por
+[onboarding.md](docs/onboarding.md).
 
 ## Requisitos
 
