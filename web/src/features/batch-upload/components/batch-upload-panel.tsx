@@ -89,14 +89,20 @@ export function BatchUploadPanel({
 	}
 
 	if (batchFile.file && batchFile.parse?.ok) {
+		// A failed upload keeps the file selected, so this branch — not the
+		// dropzone below — is where the API error has to surface.
 		return (
-			<BatchFilePreview
-				file={batchFile.file}
-				parsed={batchFile.parse.data}
-				isPending={isPending}
-				onRemove={handleReset}
-				onUpload={handleUpload}
-			/>
+			<section className="flex flex-col gap-4">
+				{error && <ErrorBanner title="No se pudo procesar el archivo" error={error} onRetry={handleUpload} />}
+
+				<BatchFilePreview
+					file={batchFile.file}
+					parsed={batchFile.parse.data}
+					isPending={isPending}
+					onRemove={handleReset}
+					onUpload={handleUpload}
+				/>
+			</section>
 		);
 	}
 

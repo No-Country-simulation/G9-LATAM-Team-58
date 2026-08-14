@@ -21,12 +21,13 @@ consultar.
 
 ## 💡 Qué hace
 
-- 📚**Clasificación temática** — asigna cada contenido a una de 8 categorías.
-- 🔑**Extracción de palabras clave** — identifica los términos más relevantes.
-- 🔗**Contenidos relacionados** — recomienda material semánticamente parecido.
-- 🔍**Búsqueda semántica** — encuentra por significado, no solo por coincidencia de palabras.
-- 🗺️**Mapa del conocimiento** — visualiza todo el corpus en 2D, coloreado por categoría.
-- 📈**Base que crece** — indexado incremental: cada nuevo contenido enriquece las recomendaciones.
+Clasifica cada contenido en una de 8 categorías y le extrae las palabras clave.
+A partir de ahí puedes buscar por significado y no solo por coincidencia de
+palabras, ver qué contenidos se parecen entre sí, y mirar el corpus entero en un
+mapa 2D coloreado por categoría.
+
+Todo lo que entra queda indexado en el momento, así que cada contenido nuevo
+mejora las recomendaciones de los siguientes.
 
 ## 🧩 Categorías
 
@@ -54,7 +55,7 @@ numérica de su significado (un embedding). La API guarda el contenido, su
 categoría, sus palabras clave y ese embedding en la base de datos.
 
 A partir de ahí, ese contenido ya es candidato a aparecer como "relacionado" la
-próxima vez que alguien busque algo parecido — sea por texto libre o porque otro
+próxima vez que alguien busque algo parecido, sea por texto libre o porque otro
 contenido nuevo se le acerca en significado. La comparación de significados la
 resuelve la propia base de datos, no un proceso aparte: por eso el corpus
 completo, y no solo una muestra, entra en cada búsqueda.
@@ -69,7 +70,6 @@ completo, y no solo una muestra, entra en cada búsqueda.
 | [data/](data/) | Construcción del corpus: extracción, limpieza y etiquetado. | Python |
 | [notebook/](notebook/) | Entrenamiento y evaluación; serializa el modelo y el índice del corpus. | Python · scikit-learn · sentence-transformers |
 | [scripts/](scripts/) | Herramientas operativas de un solo uso (sembrar la base de datos). | Python |
-| [docs/](docs/) | Especificación del proyecto, contratos entre capas y guías de infraestructura. | Markdown |
 
 Infraestructura: Docker, Oracle Autonomous Database (AI Vector Search), Oracle
 Cloud Infrastructure (OCI). Los identificadores de esa infraestructura —el
@@ -79,25 +79,27 @@ ganar nada.
 
 ## Empezar
 
-Requisitos: Java 25, Python 3.12, Node 22, pnpm 11, Docker.
+Requisitos: **Docker**. Además Node 22 y pnpm 11 si vas a desarrollar la web con
+recarga en caliente, la única pieza que no corre en contenedor.
 
 ```bash
+cp .env.example .env       # y rellenar
 docker compose up          # levanta api + inference
-cd web && pnpm dev         # levanta la web
 ```
 
+`api` e `inference` necesitan dos cosas que no están en el repo: el wallet de la
+Autonomous Database y el `model.joblib` del bucket. Dónde vive cada uno en tu
+máquina se declara en `docker-compose.override.yml`, que Docker Compose fusiona
+solo y que está fuera del control de versiones, porque las rutas son de cada
+quien. Los README de [api/](api/) e [inference/](inference/) traen el detalle.
+
+La web es la única pieza que en local no corre en contenedor: `cd web && pnpm dev`.
+El servicio `web` de compose sirve el bundle de producción con nginx y TLS, y
+necesita el Certificado de Origen de Cloudflare, que solo está en la VM
+([web/README.md](web/README.md)).
+
 Cada carpeta documenta su propia configuración, sus variables de entorno y sus
-pruebas en su README — ver la tabla de arriba.
-
-## Estado del proyecto
-
-| Área | Estado |
-|---|---|
-| Corpus y etiquetado | Completo |
-| Modelo (clasificación + embeddings) | Completo |
-| API | En desarrollo |
-| Web | En desarrollo |
-| Despliegue en OCI | En desarrollo |
+pruebas en su README, según la tabla de arriba.
 
 ## Cómo contribuir
 
@@ -106,4 +108,4 @@ El flujo de ramas, la convención de commits y las reglas de cada capa están en
 
 ## Licencia
 
-MIT — ver [LICENSE](LICENSE).
+MIT. El texto completo está en [LICENSE](LICENSE).

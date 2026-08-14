@@ -9,8 +9,10 @@ Notebook de entrega:
 ## Requisitos
 
 - Python, ejecutado en Google Colab (o Jupyter local con GPU/CPU equivalente).
-- Corpus `processed/*.jsonl` (train, test en inglés, test en español) ya
-  publicado en el bucket de Object Storage por [`data/`](../data/).
+- Corpus `processed/*.jsonl` (train, test en inglés, test en español), que
+  produce [`data/`](../data/). Está versionado en `data/processed/` y publicado
+  en el bucket de Object Storage; el notebook lo lee desde el bucket, porque
+  corre en Colab.
 
 ## Uso
 
@@ -19,7 +21,7 @@ credenciales de Object Storage se leen de Colab Secrets, no de un `.env`.
 
 ## Configuración
 
-`random_state=42` en cada split, modelo y llamada a UMAP — sin fijarlo, dos
+`random_state=42` en cada split, modelo y llamada a UMAP. Sin fijarlo, dos
 ejecuciones del mismo código dan métricas distintas.
 
 ## Expone
@@ -33,7 +35,7 @@ Tres ficheros en `models/v{N}/` del bucket de Object Storage:
 | `latest.txt` | la versión activa | `inference/`, para saber qué descargar |
 
 `corpus_index.npz` trae dos arrays: `embeddings` (`float32[N, 384]`, L2-normalizados)
-y `metadata`, con una entrada por columna de la tabla `contents` — `id`, `title`,
+y `metadata`, con una entrada por columna de la tabla `contents`: `id`, `title`,
 `body`, `category`, `source`, `url`, `language`, `keywords`, `cluster`, `x`, `y`.
 `body` viaja en el índice porque `contents.body` es `NOT NULL`, y `cluster` se llama
 `cluster_id` en la base: `CLUSTER` es palabra reservada en Oracle.
@@ -55,15 +57,15 @@ Claves de `model.joblib`:
 `kmeans` y `umap_reducer` son modelos **ajustados**, no arrays precalculados: por eso
 `inference/` puede clusterizar y proyectar documentos nuevos en tiempo de request.
 
-El puntero `latest.txt` se sube el último: si apuntara a una versión cuyos ficheros
-aún se están subiendo, un servicio que arranque en ese intervalo cargaría algo que
-todavía no existe.
+`latest.txt` se sube el último, después de `model.joblib` y `corpus_index.npz`.
+El puntero solo pasa a una versión cuyos ficheros están completos en el bucket,
+que es lo que hace seguro arrancar `inference/` en cualquier momento.
 
 ## Contratos y fronteras
 
 - Los vectores del corpus **no van dentro del `.joblib`**: viven en la base de datos,
   que es donde crece el contenido. El `.joblib` solo se regenera al reentrenar.
-- El transformer tampoco viaja en el artefacto — solo su nombre. La imagen de
+- El transformer tampoco viaja en el artefacto, solo su nombre. La imagen de
   `inference/` lo hornea al construirse.
 - Prefijos E5 (`passage:` para contenido, `query:` para consultas), embeddings
   L2-normalizados float32, `random_state=42`, métrica macro-F1.

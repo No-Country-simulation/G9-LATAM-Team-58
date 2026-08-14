@@ -94,8 +94,17 @@ def _fake_artifact():
 
 
 @pytest.fixture
-def client(monkeypatch):
+def fake_artifact(monkeypatch):
+    """Swap the real artifact and transformer for fakes, without starting the app.
+
+    Split out of `client` so a test can drive startup/shutdown itself -- the
+    state left behind after shutdown is part of the contract too.
+    """
     monkeypatch.setattr("app.main.load_model", _fake_artifact)
     monkeypatch.setattr("app.main.SentenceTransformer", lambda name: _FakeEncoder())
+
+
+@pytest.fixture
+def client(fake_artifact):
     with TestClient(app) as c:
         yield c

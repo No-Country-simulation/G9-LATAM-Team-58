@@ -27,19 +27,38 @@ toca la base.
   - [`GET /stats`](#get-stats--contadores-y-agregados)
   - [`GET /model`](#get-model--estado-del-modelo-sidebar)
   - [`POST /contents/batch`](#post-contentsbatch--carga-por-lotes)
-  - [`POST /admin/seed`](#post-adminseed--carga-masiva-de-corpus)
   - [`GET /health`](#get-health--estado-de-la-api-y-sus-dependencias)
+- [📚 Documentación](#documentación)
+  - [docs/architecture.md](docs/architecture.md) — Diagrama C4 nivel 3 (estilo Mermaid): cómo funciona la API por componentes
+  - [docs/endpoint-flows.md](docs/endpoint-flows.md) — Diagramas de flujo (sequence) por endpoint
+  - [docs/onboarding.md](docs/onboarding.md) — Guía de configuración / onboarding (wallet, arranque, curl, troubleshooting)
+
+## 📚 Documentación
+
+Guías complementarias a este README. Este documento es el **contrato público**
+(endpoints, variables, perfiles, pruebas); las guías explican cómo funciona la
+API por dentro y cómo arrancarla de cero:
+
+| Guía | Qué es |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | Diagrama C4 nivel 3 (estilo Mermaid): cómo funciona la API por componentes |
+| [docs/endpoint-flows.md](docs/endpoint-flows.md) | Diagramas de flujo (sequence) por endpoint |
+| [docs/onboarding.md](docs/onboarding.md) | Guía de configuración / onboarding: wallet de la ADB, arranque (Compose o Maven), verificación con curl y troubleshooting |
+
+Para ir de cero a una API corriendo, empieza por
+[onboarding.md](docs/onboarding.md).
 
 ## Requisitos
 
-- Java 25
-- El repo trae el Maven Wrapper (`./mvnw`) — no hace falta Maven instalado.
+- Docker.
+
+Todo corre en contenedor. La imagen compila con JDK 25 usando el Maven Wrapper
+del repo, así que no hace falta ni Java ni Maven en la máquina.
 
 ## Instalación
 
 ```bash
-cd api
-./mvnw dependency:go-offline
+docker compose build api
 ```
 
 ## Configuración
@@ -53,8 +72,8 @@ de datos quedan excluidos y cualquier endpoint que dependa de ella responde
 | `SPRING_DATASOURCE_URL` | sí | JDBC de la Autonomous Database (alias del wallet) |
 | `SPRING_DATASOURCE_USERNAME` | sí | usuario de la base |
 | `SPRING_DATASOURCE_PASSWORD` | sí | contraseña de la base |
-| `TNS_ADMIN` | sí | ruta al wallet descomprimido |
-| `INFERENCE_BASE_URL` | no — default `http://163.176.120.167:8000` | dónde vive `inference/` |
+| `TNS_ADMIN` | sí | ruta al wallet **dentro del contenedor**: `/app/wallet` |
+| `INFERENCE_BASE_URL` | no — default `http://localhost:8000` | dónde vive `inference/`; compose lo fija a `http://inference:8000` |
 
 Sin las tres variables del datasource, el perfil `db` falla al arrancar en vez de
 correr con una conexión rota. Ver `application-db.properties` y
@@ -63,14 +82,23 @@ correr con una conexión rota. Ver `application-db.properties` y
 Spring Boot **no** carga `.env` de forma nativa: `api/.env.example` es solo la
 lista de qué exportar, a mano o vía `environment:` en Docker Compose.
 
+El wallet se monta en `/app/wallet`. El contenedor no ve rutas del host, así que
+`SPRING_DATASOURCE_URL` lleva `TNS_ADMIN=/app/wallet`, y dónde está el wallet en
+tu máquina se decide en el `volumes:` de `docker-compose.override.yml`. La
+Autonomous Database filtra por IP: para conectar desde fuera de la VM, esa IP
+tiene que estar en su lista de acceso.
+
 ## Uso
 
 ```bash
-./mvnw spring-boot:run                              # modo scaffold
-SPRING_PROFILES_ACTIVE=db ./mvnw spring-boot:run     # con base de datos real
+docker compose up api
 ```
 
-Sirve en `http://localhost:8080`. El catálogo completo de rutas está en
+Levanta primero `inference` y espera a que esté sano, porque la ingesta y la
+búsqueda semántica dependen de él. Sirve en `http://localhost:8080` (el puerto lo
+publica `docker-compose.override.yml`; en la VM llega todo por nginx).
+
+El catálogo completo de rutas está en
 [Referencia de la API](#referencia-de-la-api).
 
 ## Pruebas
@@ -79,18 +107,22 @@ Dos categorías de tests, con JUnit 5 y `@Tag`:
 
 | Categoría | Qué prueba | Cómo se corre |
 |---|---|---|
-| **Unit** (`src/test/.../unit/`) | cada controller con `@WebMvcTest` y servicios mockeados — sin base de datos | `./mvnw test` |
-| **Integración** (`src/test/.../integration/`) | contra la Autonomous Database real y `inference/` (perfil `db`) | exportar el `.env` y `./mvnw test -DexcludedGroups=` |
+| **Unit** (`src/test/.../unit/`) | cada controller con `@WebMvcTest` y servicios mockeados — sin base de datos | `./mvnw verify` |
+| **Integración** (`src/test/.../integration/`) | contra la Autonomous Database real y `inference/` (perfil `db`) | `./mvnw test -DexcludedGroups=` con el `.env` exportado |
 
-Por defecto Surefire excluye el tag `integration`, así que `./mvnw test` (p. ej. en CI)
-corre solo los unitarios y no toca la base. Para correrlo todo:
+Desde la raíz del repo, en un contenedor con el JDK 25 que exige el proyecto:
 
 ```bash
-export $(grep -v '^#' .env | xargs)   # o exportar las variables a mano
-./mvnw test -DexcludedGroups=
+docker run --rm -v "$PWD/api:/build" -w /build eclipse-temurin:25-jdk ./mvnw -B verify
 ```
 
-Solo integración: `./mvnw test -Dgroups=integration` (con las variables exportadas).
+En **Git Bash sobre Windows**, antepón `MSYS_NO_PATHCONV=1` para que no reescriba
+`/build` a una ruta de Windows.
+
+Por defecto Surefire excluye el tag `integration`, así que ese comando —el mismo
+que corre CI— pasa solo los unitarios y no toca la base. Para incluir los de
+integración hace falta añadir `-DexcludedGroups=`, exportar las variables del
+datasource y montar el wallet; solo integración: `-Dgroups=integration`.
 
 ## Estructura
 
@@ -143,7 +175,7 @@ resuelven **solo con la base de datos**.
 `GET /contents?category=`, `GET /contents/{id}/related`, `GET /search?mode=keyword`,
 `GET /map`, `GET /stats`.
 
-Dos cosas que sorprenden a primera vista:
+Leyendo esa tabla saltan dos preguntas:
 
 - **`POST /content` hace una sola llamada.** `POST /predict` devuelve la categoría
   *y* el `embedding`, el `cluster_id` y las coordenadas `x`/`y`. La API persiste todo
@@ -219,9 +251,9 @@ título.
 | `q` | string | — | filtra por título, `LIKE` insensible a mayúsculas. Combinable con `category` |
 | `sort` | string | `""` | solo `added_at`/`addedAt` ordenan (DESC); cualquier otro valor = sin orden |
 | `page` | int | 0 | paginación |
-| `size` | int | 20 | tamaño de página |
+| `size` | int | 20 | tamaño de página (máximo 100) |
 
-**Devuelve** `200 OK` — total y resúmenes:
+**Devuelve** `200 OK` con el total y los resúmenes:
 
 ```json
 {
@@ -257,7 +289,7 @@ GET /contents?page=2&size=50   -> paginado
 |---|---|---|
 | `id` | string | id del contenido (`devto-4821`, `usr-9f2c1e04`…) |
 
-**Devuelve** `200 OK` — el contenido completo:
+**Devuelve** `200 OK` con el contenido completo:
 
 ```json
 {
@@ -311,7 +343,7 @@ Dos modos: **semantic** (embeddings, vía inferencia) y **keyword** (léxica sob
 | `mode` | `semantic` \| `keyword` | `semantic` | tipo de búsqueda |
 | `category` | string | — | filtro opcional por categoría |
 | `page` | int | 0 | paginación |
-| `size` | int | 10 | tamaño de página |
+| `size` | int | 10 | tamaño de página (máximo 100) |
 
 **Devuelve** `200 OK`:
 
@@ -351,7 +383,7 @@ Coordenadas 2D (UMAP) de cada documento, para la nube de puntos.
 ]
 ```
 
-> Los puntos salen de las columnas `x`/`y` de la base — no pasan por inference. Los
+> Los puntos salen de las columnas `x`/`y` de la base y no pasan por inference. Los
 > contenidos añadidos en vivo con `POST /content` **sí aparecen** en el mapa: sus
 > coordenadas las calcula `umap_reducer.transform()` dentro de `POST /predict` y se
 > persisten con el resto.
@@ -395,7 +427,7 @@ Totales por categoría para las tarjetas de Biblioteca y la leyenda del mapa.
   "version": "v1",
   "embeddingModel": "intfloat/multilingual-e5-small",
   "dim": 384,
-  "macroF1": 0.84
+  "macroF1": 0.7581
 }
 ```
 
@@ -407,85 +439,38 @@ Totales por categoría para las tarjetas de Biblioteca y la leyenda del mapa.
 Ingiere varios contenidos desde un CSV.
 
 **Recibe:** `multipart/form-data` con un archivo `file` (CSV con columnas
-`title,body`).
+`title,body`). **Máximo 200 filas de datos** y 5 MB.
 
 **Devuelve** `200 OK`:
 
 ```json
 {
-  "processed": 231,
+  "processed": 128,
   "failed": 3,
   "ids": ["usr-3a71bd90", "usr-c04e1f22", "usr-88b5a7de", "..."],
   "errors": [
     { "row": 57, "reason": "El campo 'body' no puede estar vacío" }
   ],
-  "byCategory": { "Backend": 58, "Frontend": 41, "Datos e IA": 33 }
+  "byCategory": { "Backend": 58, "Frontend": 41, "Datos e IA": 29 }
 }
 ```
 
 > **Síncrono:** la respuesta llega una sola vez, al terminar de procesar todo el CSV.
 > La web muestra una barra indeterminada mientras espera.
 
-**Errores:** `400 VALIDATION_ERROR` si el CSV está mal formado o vacío.
+El tope de filas existe porque cada fila cuesta una llamada a inference: el
+límite de tamaño no acota el trabajo, ya que las filas cortas son baratas de
+enviar y caras de procesar. Un archivo que lo supera se rechaza **entero**, sin
+ingerir ninguna fila. La web valida el mismo número antes de subir.
 
-### `POST /admin/seed` — carga masiva de corpus
-
-Persiste documentos que **ya llegan resueltos** — con su `embedding`,
-`cluster_id` y coordenadas calculados de antemano, no un texto que la API tenga
-que clasificar. Pensado para cargar el corpus completo de una vez, no para la
-ingesta normal de un usuario.
-
-**Recibe** (body):
-
-```json
-{
-  "documents": [
-    {
-      "id": "devto-4821",
-      "title": "Introducción a Spring Boot",
-      "body": "...",
-      "category": "Backend",
-      "embedding": [0.021, -0.118, "…384 floats…"],
-      "x": 1.24,
-      "y": -3.07,
-      "clusterId": 3,
-      "keywords": ["Java", "Spring Boot"]
-    }
-  ]
-}
-```
-
-Hasta 5000 documentos por request; `embedding` debe traer exactamente 384
-valores.
-
-**Devuelve** `200 OK`:
-
-```json
-{
-  "processed": 4821,
-  "failed": 3,
-  "skipped": 0,
-  "ids": ["devto-4821", "..."],
-  "errors": [
-    { "documentId": "devto-0099", "reason": "embedding debe tener 384 valores" }
-  ]
-}
-```
-
-> **No es la única forma de sembrar la tabla.** [`scripts/seed_db`](../scripts/README.md)
-> lee `corpus_index.npz` directo y escribe con `oracledb`, sin pasar por este
-> endpoint — hoy es la ruta que de verdad se usa de punta a punta. Este endpoint
-> existe para el caso en que un cliente ya tenga los documentos resueltos en
-> memoria; nada en el repo lo llama todavía. Detalle de por qué coexisten las dos
-> rutas: [`scripts/README.md`](../scripts/README.md#las-dos-rutas-que-escriben-contents-y-en-qué-se-diferencian).
-
-**Errores:** `503` si `app.database.enabled` no está activo (perfil `db`).
+**Errores:** `400 VALIDATION_ERROR` si el CSV está mal formado, vacío o supera
+las 200 filas.
 
 ### `GET /health` — estado de la API y sus dependencias
 
 Sondeo de salud para orquestador/CI: responde **siempre `200 OK`** y reporta si
 `inference/` y la base de datos están alcanzables. No aparece en Swagger
-(oculto con `@Hidden`) — este es su único contrato.
+(oculto con `@Hidden`), así que este es su único contrato.
 
 **Recibe:** nada.
 

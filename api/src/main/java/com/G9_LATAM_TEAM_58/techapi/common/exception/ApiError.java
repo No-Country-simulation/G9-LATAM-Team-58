@@ -12,7 +12,12 @@ public class ApiError {
     private String message;
     private String timestamp;
 
-    public static ApiError of(String error, String message) {
-        return new ApiError(error, message, Instant.now().toString());
+    /**
+     * Builds the error body. `error` is the machine-readable code from
+     * {@link ErrorCode} and stays in English; `message` is the only part the end
+     * user reads, so it is in Spanish.
+     */
+    public static ApiError of(ErrorCode error, String message) {
+        return new ApiError(error.name(), message, Instant.now().toString());
     }
 }

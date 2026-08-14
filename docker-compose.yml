@@ -15,8 +15,8 @@ services:
     expose:
       - "8000"
     environment:
-      # Filled in once the service downloads the artifact at startup.
-      OCI_NAMESPACE: ${OCI_NAMESPACE:-}
+      # Bucket holding the artifact. The Object Storage namespace is NOT passed
+      # in: oci_client.load_model() resolves it at runtime via get_namespace().
       MODEL_BUCKET: ${MODEL_BUCKET:-techmind-data}
     networks: [techmind]
 
@@ -47,6 +47,14 @@ services:
     depends_on:
       inference:
         condition: service_healthy
+    # /health never fails, so a 200 here means "accepting traffic", not "healthy
+    # in every dependency". start_period covers Spring's boot time.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
     networks: [techmind]
 
   # nginx serves the React build and reverse-proxies /api to the api container.
@@ -69,6 +77,8 @@ services:
       # on the VM. Never in the repo -- the .key is a private key. Expected file
       # names: mindloom.pem and mindloom.key (nginx.conf points at them).
       - ./certs:/etc/nginx/certs:ro
+    # Deliberately not gated on the api being healthy: nginx also serves the
+    # static SPA, and waiting would take the whole site down whenever the API is.
     depends_on:
       - api
     networks: [techmind]
