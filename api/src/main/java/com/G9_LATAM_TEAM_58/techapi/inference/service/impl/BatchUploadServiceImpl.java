@@ -29,6 +29,9 @@ public class BatchUploadServiceImpl implements IBatchUploadService {
      *
      * <p>The web mirrors this number in batch-upload/constants.ts so the user
      * gets an instant local error instead of a wasted upload; keep them in sync.
+     * Blank lines are excluded from the count on both sides (papaparse runs with
+     * skipEmptyLines), otherwise a trailing newline on a 200-row file would pass
+     * the local check and get rejected here.
      */
     private static final int MAX_ROWS = 200;
 
@@ -65,6 +68,9 @@ public class BatchUploadServiceImpl implements IBatchUploadService {
             List<String> rows = new ArrayList<>();
             String line;
             while ((line = reader.readLine()) != null) {
+                if (line.isBlank()) {
+                    continue;
+                }
                 rows.add(line);
             }
 
