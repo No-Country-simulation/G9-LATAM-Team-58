@@ -1,5 +1,6 @@
 import { BrandMark } from '@/components/brand';
 import { NavLink, useLocation } from 'react-router';
+import { useModelInfo } from '@/features/dashboard';
 import { NAV_GROUPS, type NavItem } from '@/shared/config/navigation';
 import {
 	Sidebar,
@@ -40,6 +41,8 @@ function SidebarNavItem({ item }: { item: NavItem }) {
 }
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+	const model = useModelInfo();
+
 	return (
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
@@ -74,13 +77,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 					</SidebarGroup>
 				))}
 			</SidebarContent>
-			<SidebarFooter>
-				{/* TODO: read the real values from the model metadata endpoint once it exists. */}
-				<p className="flex items-center gap-2 px-2 font-mono text-[11px] text-text-dim">
-					<span className="size-1.5 shrink-0 rounded-full bg-success shadow-[0_0_6px_var(--success)]" />
-					modelo v1 · 384d · F1 0.84
-				</p>
-			</SidebarFooter>
+			{model.data && (
+				<SidebarFooter>
+					<p className="flex items-center gap-2 px-2 font-mono text-[11px] text-text-dim">
+						<span className="size-1.5 shrink-0 rounded-full bg-success shadow-[0_0_6px_var(--success)]" />
+						modelo {model.data.version} · {model.data.dim}d · F1 {model.data.macroF1.toFixed(2)}
+					</p>
+				</SidebarFooter>
+			)}
 			<SidebarRail />
 		</Sidebar>
 	);

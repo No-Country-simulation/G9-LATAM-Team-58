@@ -42,11 +42,13 @@ public interface ContentRepository extends JpaRepository<Content, String> {
         SELECT id, title, category,
                1 - VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE) AS similarity
         FROM contents
+        WHERE VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE) <= :maxDistance
         ORDER BY VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE)
         OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
     """, nativeQuery = true)
     List<Object[]> semanticSearch(
             @Param("queryEmbedding") String queryEmbedding,
+            @Param("maxDistance") double maxDistance,
             @Param("offset") int offset,
             @Param("limit") int limit
     );
@@ -56,26 +58,44 @@ public interface ContentRepository extends JpaRepository<Content, String> {
                1 - VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE) AS similarity
         FROM contents
         WHERE category = :category
+          AND VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE) <= :maxDistance
         ORDER BY VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE)
         OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY
     """, nativeQuery = true)
     List<Object[]> semanticSearchWithCategory(
             @Param("queryEmbedding") String queryEmbedding,
             @Param("category") String category,
+            @Param("maxDistance") double maxDistance,
             @Param("offset") int offset,
             @Param("limit") int limit
     );
 
-    @Query(value = "SELECT COUNT(*) FROM contents", nativeQuery = true)
-    long countAll();
+    @Query(value = """
+        SELECT COUNT(*) FROM contents
+        WHERE VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE) <= :maxDistance
+    """, nativeQuery = true)
+    long countBySimilarity(@Param("queryEmbedding") String queryEmbedding, @Param("maxDistance") double maxDistance);
 
-    @Query(value = "SELECT COUNT(*) FROM contents WHERE category = :category", nativeQuery = true)
-    long countByCategory(@Param("category") String category);
+    @Query(value = """
+        SELECT COUNT(*) FROM contents
+        WHERE category = :category
+          AND VECTOR_DISTANCE(embedding, TO_VECTOR(:queryEmbedding, 384, FLOAT32), COSINE) <= :maxDistance
+    """, nativeQuery = true)
+    long countBySimilarityAndCategory(
+            @Param("queryEmbedding") String queryEmbedding,
+            @Param("category") String category,
+            @Param("maxDistance") double maxDistance
+    );
 
     @Query(value = "SELECT id, title, category FROM contents WHERE title LIKE %:q% OR body LIKE %:q%",
             countQuery = "SELECT COUNT(*) FROM contents WHERE title LIKE %:q% OR body LIKE %:q%",
             nativeQuery = true)
     Page<Object[]> keywordSearch(@Param("q") String q, Pageable pageable);
+
+    @Query(value = "SELECT id, title, category FROM contents WHERE category = :category AND (title LIKE %:q% OR body LIKE %:q%)",
+            countQuery = "SELECT COUNT(*) FROM contents WHERE category = :category AND (title LIKE %:q% OR body LIKE %:q%)",
+            nativeQuery = true)
+    Page<Object[]> keywordSearchWithCategory(@Param("q") String q, @Param("category") String category, Pageable pageable);
 
     @Query(value = """
         SELECT id, title, category, x, y

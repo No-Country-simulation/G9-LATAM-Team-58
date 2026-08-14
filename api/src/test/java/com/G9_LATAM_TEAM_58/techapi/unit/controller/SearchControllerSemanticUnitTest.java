@@ -15,6 +15,7 @@ import java.util.List;
 
 import static com.G9_LATAM_TEAM_58.techapi.unit.controller.SharedTestAssertions.assertApiError;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -43,7 +44,7 @@ class SearchControllerSemanticUnitTest {
 
     @Test
     void test200Semantic() throws Exception {
-        when(semanticSearchService.search(eq("test"), any(), anyInt(), anyInt()))
+        when(semanticSearchService.search(eq("test"), any(), anyInt(), anyInt(), anyDouble()))
                 .thenReturn(buildSemanticResponse());
 
         mvc.perform(get("/search").param("q", "test").param("mode", "semantic"))
@@ -55,6 +56,18 @@ class SearchControllerSemanticUnitTest {
     @Test
     void testInvalidMode() throws Exception {
         MvcResult result = mvc.perform(get("/search").param("q", "test").param("mode", "invalid"))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        assertApiError(result, HttpStatus.BAD_REQUEST, "VALIDATION_ERROR");
+    }
+
+    @Test
+    void testRejectsOversizedPage() throws Exception {
+        // Worse here than on /contents: an unbounded size makes the database
+        // rank the whole corpus by vector distance for one request.
+        MvcResult result = mvc.perform(get("/search")
+                        .param("q", "test").param("mode", "semantic").param("size", "1000000"))
                 .andExpect(status().isBadRequest())
                 .andReturn();
 

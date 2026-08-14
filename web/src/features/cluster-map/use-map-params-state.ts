@@ -1,4 +1,3 @@
-import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 
 /**
@@ -11,19 +10,16 @@ export function useMapParamsState() {
 
 	const selectedId = searchParams.get('punto') ?? undefined;
 
-	const select = useCallback(
-		(id: string | undefined) => {
-			setSearchParams(params => {
-				if (id) {
-					params.set('punto', id);
-				} else {
-					params.delete('punto');
-				}
-				return params;
-			});
-		},
-		[setSearchParams]
-	);
+	function select(id: string | undefined) {
+		setSearchParams(params => {
+			if (id) {
+				params.set('punto', id);
+			} else {
+				params.delete('punto');
+			}
+			return params;
+		});
+	}
 
-	return useMemo(() => ({ selectedId, select }), [selectedId, select]);
+	return { selectedId, select };
 }

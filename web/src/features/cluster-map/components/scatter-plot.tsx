@@ -2,7 +2,7 @@ import { scaleLinear } from '@visx/scale';
 import { useTooltip, useTooltipInPortal } from '@visx/tooltip';
 import { Zoom } from '@visx/zoom';
 import type { ProvidedZoom, ZoomState } from '@visx/zoom';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { categoryColorVar } from '@/shared/config/categories';
 import { useTheme } from '@/shared/theme/use-theme';
 import type { MapPoint } from '@/shared/api/contracts';
@@ -62,55 +62,45 @@ interface ScatterPlotProps {
 export function ScatterPlot({ points, width, height, activeCategory, query, selectedId, onSelect }: ScatterPlotProps) {
 	const { resolvedTheme } = useTheme();
 
-	const { xScale, yScale } = useMemo(() => {
-		let xMin = Infinity;
-		let xMax = -Infinity;
-		let yMin = Infinity;
-		let yMax = -Infinity;
-		for (const point of points) {
-			if (point.x < xMin) xMin = point.x;
-			if (point.x > xMax) xMax = point.x;
-			if (point.y < yMin) yMin = point.y;
-			if (point.y > yMax) yMax = point.y;
-		}
-		return {
-			xScale: scaleLinear<number>({ domain: [xMin, xMax], range: [PADDING, width - PADDING] }),
-			yScale: scaleLinear<number>({ domain: [yMin, yMax], range: [PADDING, height - PADDING] })
-		};
-	}, [points, width, height]);
+	let xMin = Infinity;
+	let xMax = -Infinity;
+	let yMin = Infinity;
+	let yMax = -Infinity;
+	for (const point of points) {
+		if (point.x < xMin) xMin = point.x;
+		if (point.x > xMax) xMax = point.x;
+		if (point.y < yMin) yMin = point.y;
+		if (point.y > yMax) yMax = point.y;
+	}
+	const xScale = scaleLinear<number>({ domain: [xMin, xMax], range: [PADDING, width - PADDING] });
+	const yScale = scaleLinear<number>({ domain: [yMin, yMax], range: [PADDING, height - PADDING] });
 
 	// Grouped once per data/layout change — the draw loop below iterates these
 	// groups instead of re-grouping every frame.
-	const positionsByColorVar = useMemo(() => {
-		const groups = new Map<string, PositionedPoint[]>();
-		for (const point of points) {
-			const colorVar = categoryColorVar(point.category);
-			const entry: PositionedPoint = { point, x: xScale(point.x), y: yScale(point.y) };
-			const group = groups.get(colorVar);
-			if (group) {
-				group.push(entry);
-			} else {
-				groups.set(colorVar, [entry]);
-			}
+	const positionsByColorVar = new Map<string, PositionedPoint[]>();
+	for (const point of points) {
+		const colorVar = categoryColorVar(point.category);
+		const entry: PositionedPoint = { point, x: xScale(point.x), y: yScale(point.y) };
+		const group = positionsByColorVar.get(colorVar);
+		if (group) {
+			group.push(entry);
+		} else {
+			positionsByColorVar.set(colorVar, [entry]);
 		}
-		return groups;
-	}, [points, xScale, yScale]);
+	}
 
 	// Canvas needs resolved colours, not `var(...)` — read once per theme change.
-	const colors = useMemo(() => {
-		if (typeof window === 'undefined') {
-			return new Map<string, string>();
-		}
+	// `resolvedTheme` isn't read directly below — it's what forces this block to
+	// re-run and re-read the vars from the DOM after `.dark` flips.
+	void resolvedTheme;
+	const colors = new Map<string, string>();
+	if (typeof window !== 'undefined') {
 		const styles = getComputedStyle(document.documentElement);
-		const resolved = new Map<string, string>();
 		for (const colorVar of positionsByColorVar.keys()) {
-			resolved.set(colorVar, styles.getPropertyValue(colorVar).trim());
+			colors.set(colorVar, styles.getPropertyValue(colorVar).trim());
 		}
-		resolved.set('--foreground', styles.getPropertyValue('--foreground').trim());
-		return resolved;
-		// `resolvedTheme` isn't read directly — it's the dependency that forces this
-		// memo to re-run and re-read the vars from the DOM after `.dark` flips.
-	}, [positionsByColorVar, resolvedTheme]);
+		colors.set('--foreground', styles.getPropertyValue('--foreground').trim());
+	}
 
 	const { tooltipData, tooltipLeft, tooltipTop, tooltipOpen, showTooltip, hideTooltip } = useTooltip<MapPoint>();
 	const { containerRef, containerBounds, TooltipInPortal } = useTooltipInPortal({ scroll: true, detectBounds: true });
@@ -188,13 +178,11 @@ interface ScatterCanvasProps {
 	onHover: (point: MapPoint | undefined, clientX: number, clientY: number) => void;
 }
 
-/**
- * Owns the canvas element and everything that must react to the zoom
- * transform on every frame. Split out from `ScatterPlot` because it renders
- * inside the `<Zoom>` render prop: hooks called directly in that closure would
- * run under Zoom's own render, not this component's — a real footgun, not a
- * style preference. As its own component it gets a proper hook context.
- */
+// Owns the canvas element and everything that must react to the zoom
+// transform on every frame. Split out from `ScatterPlot` because it renders
+// inside the `<Zoom>` render prop: hooks called directly in that closure would
+// run under Zoom's own render, not this component's — a real footgun, not a
+// style preference. As its own component it gets a proper hook context.
 function ScatterCanvas({
 	zoom,
 	width,
@@ -420,6 +408,9 @@ function ScatterCanvas({
 	}
 
 	return (
+		// Known a11y gap: point selection is pixel-based and has no keyboard
+		// equivalent yet. Real parity needs a focus/arrow-key affordance over the
+		// point set, which is a feature of its own, not a one-line fix.
 		<canvas
 			ref={canvasRef}
 			style={{ width, height, touchAction: 'none' }}

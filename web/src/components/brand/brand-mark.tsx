@@ -1,6 +1,5 @@
 import type { SVGProps } from 'react';
 
-/** The compact SVG mark used to identify Mindloom in the application shell. */
 export function BrandMark({ className, ...props }: SVGProps<SVGSVGElement>) {
 	return (
 		<svg viewBox="0 0 36 36" fill="none" role="img" aria-label="Mindloom" className={className} {...props}>

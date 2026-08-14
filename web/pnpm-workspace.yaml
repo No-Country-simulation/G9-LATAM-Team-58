@@ -1,0 +1,14 @@
+allowBuilds:
+  msw: true
+
+# Delay installs until releases have been vetted, to reduce supply-chain risk
+# from freshly published malicious versions. Value in minutes (10080 = 7 days).
+minimumReleaseAge: 10080
+
+# Reject packages whose trust signals (provenance, signatures) weaken between
+# updates instead of silently accepting the downgrade.
+# trustPolicy: no-downgrade
+
+minimumReleaseAgeExclude:
+  - '@testing-library/user-event@14.6.3'
+  - '@vitest/eslint-plugin@1.6.26'

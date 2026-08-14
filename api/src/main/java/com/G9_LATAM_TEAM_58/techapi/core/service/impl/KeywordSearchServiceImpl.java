@@ -23,14 +23,12 @@ public class KeywordSearchServiceImpl implements IKeywordSearchService {
 
     @Override
     public SearchResponse search(String q, String category, int page, int size) {
-        // Build query: if category is provided, incorporate it
-        String query = q;
-        if (category != null && !category.isBlank()) {
-            query = q + " " + category;
-        }
+        long start = System.currentTimeMillis();
 
         PageRequest pageable = PageRequest.of(page, size);
-        Page<Object[]> contentPage = contentRepository.keywordSearch(query, pageable);
+        Page<Object[]> contentPage = (category != null && !category.isBlank())
+                ? contentRepository.keywordSearchWithCategory(q, category, pageable)
+                : contentRepository.keywordSearch(q, pageable);
 
         List<SearchResult> results = contentPage.getContent().stream()
                 .map(row -> {
@@ -46,7 +44,9 @@ public class KeywordSearchServiceImpl implements IKeywordSearchService {
         SearchResponse response = new SearchResponse();
         response.setMode("keyword");
         response.setTotal(contentPage.getTotalElements());
-        response.setElapsedMs(0);
+        // Measured, not zero: the web shows this next to the semantic timing, and a
+        // constant 0 made keyword search look free by comparison.
+        response.setElapsedMs(System.currentTimeMillis() - start);
         response.setResults(results);
         return response;
     }

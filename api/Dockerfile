@@ -18,6 +18,12 @@ RUN ./mvnw -B -q clean package -DskipTests
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 
+# curl is only here for the compose healthcheck: the runtime image ships no HTTP
+# client and the JRE alone cannot probe /health from a shell.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Never run as root.
 RUN useradd --system --create-home --uid 1001 spring
 USER spring

@@ -7,11 +7,15 @@ import oci
 
 def _bucket_client():
     try:
-        # En la VM: Instance Principal, sin credenciales explícitas.
         signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
         return oci.object_storage.ObjectStorageClient({}, signer=signer)
-    except (oci.exceptions.ConfigFileNotFound, oci.exceptions.InvalidConfig):
-        # En local: ~/.oci/config (API key).
+    except Exception:  # noqa: BLE001
+        # Off an OCI compute instance the signer fails reaching the metadata
+        # endpoint (169.254.169.254) and raises a connection error, NOT a config
+        # error -- catching only ConfigFileNotFound/InvalidConfig made this
+        # fallback unreachable and crashed the container instead.
+        #
+        # local: ~/.oci/config (API key).
         return oci.object_storage.ObjectStorageClient(oci.config.from_file())
 
 

@@ -1,4 +1,4 @@
-// TypeScript mirror of (public API consumed by the web).
+// TypeScript mirror of the Spring Boot API (`api/`) surface consumed by the web.
 // Field names stay in English per the repo language rule; categories arrive in
 // Spanish and are rendered as-is. If a contract changes, change it here first.
 //
@@ -76,7 +76,8 @@ export interface SearchResult {
 
 export interface SearchResponse {
 	mode: string;
-	// WARNING: `total` is the page size, not the overall hit count.
+	// Overall hit count across all pages (`countAll`/`countByCategory` on the
+	// server), not the size of this page — safe to use for numbered pagination.
 	total: number;
 	elapsedMs: number;
 	results: SearchResult[];

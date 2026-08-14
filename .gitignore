@@ -1,4 +1,4 @@
-# === Hard rules: never commit models, datasets or secrets, anywhere in the repo ===
+# === Hard rules: never commit models or secrets, anywhere in the repo ===
 *.joblib
 *.jsonl
 *.csv
@@ -10,11 +10,22 @@
 wallet/
 *_wallet.zip
 
+# Cloudflare Origin Certificate for mindloom.lat. Lives on the VM, mounted into
+# the nginx container. The .key is a private key — never commit it.
+certs/
+*.pem
+*.key
+
 # Model artifacts and corpus index (local mirrors). They live on the OCI bucket
 # and the Autonomous Database — never commit them.
 model/
 models/
 processed/
+
+# One deliberate exception to the two rules above: the processed corpus IS
+# versioned. It is declared in data/.gitignore, not here — the .gitignore
+# closest to a file wins, so a negation written at this level would be
+# overridden by data/.gitignore and silently do nothing.
 
 # Local-only compose override (publishes inference:8000 for dev). Never on the VM.
 docker-compose.override.yml

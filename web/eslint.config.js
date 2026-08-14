@@ -5,6 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import vitest from '@vitest/eslint-plugin';
 
 export default defineConfig([
 	globalIgnores(['dist']),
@@ -45,5 +46,9 @@ export default defineConfig([
 			],
 			'@typescript-eslint/no-explicit-any': ['warn']
 		}
+	},
+	{
+		files: ['**/*.test.{ts,tsx}', 'src/test/**'],
+		extends: [vitest.configs.recommended]
 	}
 ]);

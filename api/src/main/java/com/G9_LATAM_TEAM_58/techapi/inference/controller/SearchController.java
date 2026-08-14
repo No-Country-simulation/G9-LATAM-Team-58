@@ -3,6 +3,7 @@ package com.G9_LATAM_TEAM_58.techapi.inference.controller;
 import com.G9_LATAM_TEAM_58.techapi.common.exception.InferenceUnavailableException;
 import com.G9_LATAM_TEAM_58.techapi.common.dto.SearchResponse;
 import com.G9_LATAM_TEAM_58.techapi.common.exception.ValidationException;
+import com.G9_LATAM_TEAM_58.techapi.common.util.Pagination;
 import com.G9_LATAM_TEAM_58.techapi.core.service.IKeywordSearchService;
 import com.G9_LATAM_TEAM_58.techapi.inference.service.ISemanticSearchService;
 import org.springframework.web.bind.annotation.*;
@@ -28,11 +29,14 @@ public class SearchController {
             @RequestParam(defaultValue = "semantic") String mode,
             @RequestParam(required = false) String category,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0.5") double minSimilarity) {
 
         if (q == null || q.isBlank()) {
             throw new ValidationException("El parámetro 'q' no puede estar vacío");
         }
+
+        Pagination.validate(page, size);
 
         if ("semantic".equalsIgnoreCase(mode)) {
             if (semanticSearchService == null) {
@@ -40,7 +44,7 @@ public class SearchController {
                     "Base de datos no configurada. Use app.database.enabled=true"
                 );
             }
-            return semanticSearchService.search(q, category, page, size);
+            return semanticSearchService.search(q, category, page, size, minSimilarity);
         } else if ("keyword".equalsIgnoreCase(mode)) {
             if (keywordSearchService == null) {
                 throw new InferenceUnavailableException(

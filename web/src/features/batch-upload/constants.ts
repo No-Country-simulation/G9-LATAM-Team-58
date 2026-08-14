@@ -1,7 +1,11 @@
 // One /predict call per CSV row (see api.ts), so the caps keep a batch from
 // running long enough to hit the 300s upload timeout.
 export const MAX_FILE_SIZE = 5 * 1024 * 1024;
-export const MAX_ROWS = 2_000;
+
+// Must match MAX_ROWS in BatchUploadServiceImpl: the API rejects anything above
+// this with a 400, and checking here too turns a wasted upload into an instant
+// local error. Raising one side alone just moves where the failure appears.
+export const MAX_ROWS = 200;
 
 export const ACCEPTED_EXTENSION = '.csv';
 

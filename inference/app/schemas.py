@@ -29,7 +29,9 @@ class EmbedResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
-    version: str
+    # None while the artifact is not loaded: /health must answer even then, so it
+    # cannot promise a version it does not know yet.
+    version: str | None
 
 
 class ModelMetrics(BaseModel):

@@ -1,6 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
-/** Placeholder cards shown while a search request is in flight. */
 export function ResultsSkeleton() {
 	return (
 		<div className="flex flex-col gap-3" aria-hidden="true">

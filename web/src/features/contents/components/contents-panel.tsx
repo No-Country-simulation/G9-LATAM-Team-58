@@ -1,9 +1,9 @@
+import { NumberedPagination } from '@/components/data-display';
 import { ErrorBanner } from '@/components/feedback/error-banner';
 import type { ApiError } from '@/shared/api/client';
 import type { ContentListResponse } from '@/shared/api/contracts';
 import { DEFAULT_CONTENTS_PAGE_SIZE } from '../api';
 import { ContentsEmpty } from './contents-empty';
-import { ContentsPagination } from './contents-pagination';
 import { ContentsTable } from './contents-table';
 import { ContentsTableSkeleton } from './contents-table-skeleton';
 
@@ -46,7 +46,7 @@ export function ContentsPanel({
 	return (
 		<div className="flex flex-col gap-4">
 			<ContentsTable items={data.items} />
-			<ContentsPagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
+			<NumberedPagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
 		</div>
 	);
 }

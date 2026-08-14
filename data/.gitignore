@@ -1,8 +1,21 @@
-# Corpus output -- lives on the OCI bucket, never in the repo.
+# Corpus output. `raw/` is the scratch input and stays out of the repo.
 raw/
 processed/
 *.jsonl
 *.csv
+
+# Exception, decided deliberately: the three processed corpus files ARE
+# versioned. They are the input the training notebook needs, so keeping them
+# here means the metrics and the demo can be reproduced without bucket
+# credentials. Any other dataset still falls under the rules above.
+#
+# Order matters: the directory has to be re-included before the files, because
+# git never looks inside an excluded directory -- negating only the files would
+# do nothing.
+!processed/
+!processed/train_corpus.jsonl
+!processed/test_corpus.jsonl
+!processed/test_corpus_es.jsonl
 
 # Scratch notebooks: unreviewed copies.
 * copy.ipynb

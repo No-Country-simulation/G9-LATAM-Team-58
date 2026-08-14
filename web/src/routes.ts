@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router';
 import { AppLayout } from '@/components/layout/app-layout';
+import { RouteErrorBoundary } from '@/components/layout/route-error-boundary';
 import { RouteLoadingScreen } from '@/components/layout/route-loading';
 
 // React Router data mode: the route tree is data, pages stay thin.
@@ -9,6 +10,7 @@ export const router = createBrowserRouter([
 	{
 		path: '/',
 		Component: AppLayout,
+		ErrorBoundary: RouteErrorBoundary,
 		HydrateFallback: RouteLoadingScreen,
 		children: [
 			{

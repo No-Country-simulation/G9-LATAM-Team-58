@@ -8,7 +8,7 @@ interface CategoryChipsProps {
 	onSelect: (category: string | undefined) => void;
 }
 
-/** Category filter, one chip per category with its live count. Clicking the active chip clears the filter. */
+/** Clicking the already-active chip clears the filter instead of re-selecting it. */
 export function CategoryChips({ byCategory, active, onSelect }: CategoryChipsProps) {
 	return (
 		<div className="flex flex-wrap gap-2">

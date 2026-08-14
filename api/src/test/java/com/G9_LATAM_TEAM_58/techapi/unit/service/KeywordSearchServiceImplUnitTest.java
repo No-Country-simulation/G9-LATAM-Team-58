@@ -37,4 +37,23 @@ class KeywordSearchServiceImplUnitTest {
         assertEquals(2, response.getResults().size());
         assertEquals("keyword", response.getMode());
     }
+
+    @Test
+    void categoryFilterUsesDedicatedQueryAndCorrectTotal() {
+        ContentRepository contentRepository = mock(ContentRepository.class);
+        KeywordSearchServiceImpl service = new KeywordSearchServiceImpl(contentRepository);
+
+        Object[] row1 = {"id-1", "title-1", "Backend"};
+        Page<Object[]> page = new PageImpl<>(List.<Object[]>of(row1), PageRequest.of(0, 2), 7);
+
+        when(contentRepository.keywordSearchWithCategory(eq("test"), eq("Backend"), any(PageRequest.class)))
+                .thenReturn(page);
+
+        SearchResponse response = service.search("test", "Backend", 0, 2);
+
+        // Regression guard: category must route to keywordSearchWithCategory, not be
+        // concatenated into the free-text query, so total reflects real matches in-category.
+        assertEquals(7, response.getTotal());
+        assertEquals(1, response.getResults().size());
+    }
 }

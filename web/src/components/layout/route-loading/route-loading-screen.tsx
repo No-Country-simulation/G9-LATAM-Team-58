@@ -4,7 +4,6 @@ interface RouteLoadingScreenProps {
 	label?: string;
 }
 
-/** Full-screen, accessible loading state displayed while a route module loads. */
 export function RouteLoadingScreen({ label = 'Mindloom' }: RouteLoadingScreenProps) {
 	return (
 		<div
