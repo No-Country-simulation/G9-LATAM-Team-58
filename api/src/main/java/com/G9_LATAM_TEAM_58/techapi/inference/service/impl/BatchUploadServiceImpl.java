@@ -7,15 +7,17 @@ import com.G9_LATAM_TEAM_58.techapi.inference.dto.ContentIngestionRequest;
 import com.G9_LATAM_TEAM_58.techapi.inference.dto.ContentIngestionResponse;
 import com.G9_LATAM_TEAM_58.techapi.inference.service.IBatchUploadService;
 import com.G9_LATAM_TEAM_58.techapi.inference.service.IContentIngestionService;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @ConditionalOnProperty(name = "app.database.enabled", havingValue = "true")
@@ -48,11 +50,21 @@ public class BatchUploadServiceImpl implements IBatchUploadService {
         Map<String, Long> byCategory = new HashMap<>();
         int rowNum = 0;
 
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+        // Configuración de Apache Commons CSV
+        CSVFormat csvFormat = CSVFormat.Builder.create(CSVFormat.RFC4180)
+                .setHeader() // Automáticamente toma la primera fila como headers
+                .setSkipHeaderRecord(true) // Se salta los headers al iterar
+                .setIgnoreEmptyLines(true) // Reemplaza tu antigua validación line.isBlank()
+                .build();
 
-            String header = reader.readLine();
-            if (header == null) {
+        try (Reader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+             CSVParser csvParser = new CSVParser(reader, csvFormat)) {
+
+            // Extraemos todos los registros. Aquí la librería ya resolvió 
+            // los saltos de línea y las comas dentro de las comillas.
+            List<CSVRecord> records = csvParser.getRecords();
+
+            if (records.isEmpty()) {
                 BatchUploadResponse response = new BatchUploadResponse();
                 response.setProcessed(0);
                 response.setFailed(0);
@@ -62,35 +74,26 @@ public class BatchUploadServiceImpl implements IBatchUploadService {
                 return response;
             }
 
-            // Collect before ingesting: the cap has to reject the upload whole.
-            // Checking mid-loop would leave the first MAX_ROWS rows already
-            // persisted behind a 400, which is worse than not starting.
-            List<String> rows = new ArrayList<>();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.isBlank()) {
-                    continue;
-                }
-                rows.add(line);
-            }
-
-            if (rows.size() > MAX_ROWS) {
+            // Validación de límite de filas (se ejecuta antes de empezar a inyectar)
+            if (records.size() > MAX_ROWS) {
                 throw new ValidationException(
-                    "El archivo tiene " + rows.size() + " filas y el máximo es " + MAX_ROWS
+                    "El archivo tiene " + records.size() + " filas y el máximo es " + MAX_ROWS
                     + ". Divídelo en varios archivos."
                 );
             }
 
-            for (String row : rows) {
+            // Procesamiento de las filas
+            for (CSVRecord record : records) {
                 rowNum++;
-                String[] parts = parseCsvLine(row);
-                if (parts.length < 2) {
-                    errors.add(new BatchUploadError(rowNum, "Línea inválida: se esperaban 2 columnas (title,body)"));
+                
+                if (record.size() < 2) {
+                    errors.add(new BatchUploadError(rowNum, "Línea inválida: se esperaban al menos 2 columnas (title,body)"));
                     continue;
                 }
 
-                String title = parts[0].trim();
-                String body = parts[1].trim();
+                String title = record.get(0).trim();
+                String body = record.get(1).trim();
+                
                 if (title.isEmpty() || body.isEmpty()) {
                     errors.add(new BatchUploadError(rowNum, "Título y cuerpo no pueden estar vacíos"));
                     continue;
@@ -115,7 +118,7 @@ public class BatchUploadServiceImpl implements IBatchUploadService {
             // bad row to report inside a 200 response.
             throw e;
         } catch (Exception e) {
-            errors.add(new BatchUploadError(rowNum + 1, "Error de lectura: " + e.getMessage()));
+            errors.add(new BatchUploadError(rowNum + 1, "Error de lectura del CSV: " + e.getMessage()));
         }
 
         BatchUploadResponse response = new BatchUploadResponse();
@@ -125,25 +128,5 @@ public class BatchUploadServiceImpl implements IBatchUploadService {
         response.setErrors(errors);
         response.setByCategory(byCategory);
         return response;
-    }
-
-    private String[] parseCsvLine(String line) {
-        List<String> fields = new ArrayList<>();
-        boolean inQuotes = false;
-        StringBuilder current = new StringBuilder();
-
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-            if (c == '"') {
-                inQuotes = !inQuotes;
-            } else if (c == ',' && !inQuotes) {
-                fields.add(current.toString());
-                current = new StringBuilder();
-            } else {
-                current.append(c);
-            }
-        }
-        fields.add(current.toString());
-        return fields.toArray(new String[0]);
     }
 }
