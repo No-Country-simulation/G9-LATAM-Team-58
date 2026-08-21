@@ -24,19 +24,20 @@ public interface ContentRepository extends JpaRepository<Content, String> {
     @Query(value = "SELECT VECTOR_SERIALIZE(embedding) FROM contents WHERE id = :id", nativeQuery = true)
     String findEmbeddingById(@Param("id") String id);
 
-    @Query(value = """
-        SELECT id, title, category,
-               1 - VECTOR_DISTANCE(embedding, TO_VECTOR(:sourceEmbedding, 384, FLOAT32), COSINE) AS similarity
-        FROM contents
-        WHERE id <> :baseId
-        ORDER BY VECTOR_DISTANCE(embedding, TO_VECTOR(:sourceEmbedding, 384, FLOAT32), COSINE)
-        FETCH FIRST :limit ROWS ONLY
+@Query(value = """
+       SELECT id, title, category,
+              1 - VECTOR_DISTANCE(embedding, TO_VECTOR(:sourceEmbedding, 384, FLOAT32), COSINE) AS similarity
+       FROM contents
+       WHERE id <> :baseId
+         AND VECTOR_DISTANCE(embedding, TO_VECTOR(:sourceEmbedding, 384, FLOAT32), COSINE) > 0.00001
+       ORDER BY VECTOR_DISTANCE(embedding, TO_VECTOR(:sourceEmbedding, 384, FLOAT32), COSINE)
+       FETCH FIRST :limit ROWS ONLY
     """, nativeQuery = true)
-    List<Object[]> findRelatedContents(
-            @Param("sourceEmbedding") String sourceEmbedding,
-            @Param("baseId") String baseId,
-            @Param("limit") int limit
-    );
+List<Object[]> findRelatedContents(
+        @Param("sourceEmbedding") String sourceEmbedding,
+        @Param("baseId") String baseId,
+        @Param("limit") int limit
+);
 
     @Query(value = """
         SELECT id, title, category,
