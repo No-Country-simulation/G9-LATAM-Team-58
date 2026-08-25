@@ -1,9 +1,15 @@
 # Inference service. Built natively on the ARM VM (linux/arm64); an x86 image
 # fails there with `exec format error`.
-# El notebook entrena en Python 3.12 (Colab). Los Dispatcher de numba que UMAP
-# pickla dentro de model.joblib son sensibles al bytecode exacto de CPython:
-# con 3.11 no deserializan (IndexError en numba.core.byteflow).
-FROM python:3.12-slim
+# The notebook trains on Python 3.13 (Colab, 3.13.15 as of 2026-08). The numba
+# Dispatchers that UMAP pickles inside model.joblib carry raw CPython bytecode,
+# so the interpreter here must match the one that trained the artifact: under an
+# older CPython they fail to deserialize with `IndexError: pop from empty list`
+# in numba.core.byteflow. This bit us at 3.11, and again at 3.12 in August 2026
+# when the artifact moved to 3.13 -- verified 3.13 loads it, 3.12 does not.
+# Bump this line whenever Colab's Python moves, together with numba in
+# requirements.txt. A mismatch is not a warning: the container never becomes
+# healthy and takes api + web down with it.
+FROM python:3.13-slim
 
 WORKDIR /app
 
