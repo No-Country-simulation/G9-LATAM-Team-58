@@ -50,7 +50,11 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          # Must match inference/Dockerfile, which in turn must match the Python
+          # the notebook trained on: the numba Dispatchers pickled inside
+          # model.joblib carry raw CPython bytecode. Testing on a version the
+          # image does not use lets a mismatch pass CI and fail on the VM.
+          python-version: "3.13"
       - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
       - run: pip install -r requirements.txt
       - run: pip install -r requirements-dev.txt

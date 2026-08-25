@@ -5,7 +5,14 @@ python-dotenv
 joblib==1.5.3
 scikit-learn==1.9.0
 umap-learn==0.5.12
-numba==0.60.0
-llvmlite==0.43.0
+# numba must be >= the version that trained the artifact: UMAP pickles numba
+# Dispatchers inside model.joblib and that pickle is NOT backward compatible.
+# Loading a 0.61-trained artifact under 0.60 dies at startup with
+# `ModuleNotFoundError: numba.core.types.old_scalars` -- the container never
+# becomes healthy and takes api + web down with it (depends_on: service_healthy).
+# llvmlite is version-locked to numba: bump both together, never one alone.
+# The CPython version matters too, for the same pickle -- see the Dockerfile.
+numba==0.61.2
+llvmlite==0.44.0
 oci
 sentence-transformers==5.6.1
