@@ -228,10 +228,10 @@ artefacto, así que refleja la versión que el contenedor sirve de verdad.
   "terms_by_category": { "Backend": ["laravel", "net", "spring", "spring boot", "…10 términos…"], "…": [] },
   "metrics": {
     "embedding_macro_f1_en": 0.7942,
-    "embedding_macro_f1_es": 0.7581,
+    "embedding_macro_f1_es": 0.8766,
     "tfidf_macro_f1_en": 0.7841,
-    "tfidf_macro_f1_es": 0.7467,
-    "embedding_macro_f1_es_reliable": 0.7581,
+    "tfidf_macro_f1_es": 0.833,
+    "embedding_macro_f1_es_reliable": 0.8766,
     "es_reliable_categories": 8,
     "es_min_support": 30
   },
@@ -239,10 +239,14 @@ artefacto, así que refleja la versión que el contenedor sirve de verdad.
 }
 ```
 
-Son las 13 claves del bloque `meta`, tal cual las serializa el notebook. Los
-valores de arriba son los del artefacto `v1` que sirve el contenedor. Las métricas
+Son las 13 claves del bloque `meta`, tal cual las serializa el notebook. Las métricas
 en inglés llegan como `null` si el artefacto se entrenó sin `test_corpus.jsonl`: ese
 conjunto es opcional y su ausencia no invalida el modelo.
+
+> **Los valores de arriba son ilustrativos**, los del artefacto desplegado el
+> 25/08/2026. Cada reentrenamiento los cambia y `version` sigue diciendo `v1`,
+> así que este bloque documenta la *forma*, no las cifras. Para las de verdad,
+> `GET /model/info` del contenedor.
 
 `dim` son las dimensiones del **embedding**, que es lo que viaja en el contrato y lo
 que guarda la base. `feature_dim` es lo que consume el **clasificador**. 

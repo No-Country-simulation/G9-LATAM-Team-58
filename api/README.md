@@ -427,12 +427,19 @@ Totales por categoría para las tarjetas de Biblioteca y la leyenda del mapa.
   "version": "v1",
   "embeddingModel": "intfloat/multilingual-e5-small",
   "dim": 384,
-  "macroF1": 0.7581
+  "macroF1": 0.8766
 }
 ```
 
 > Proxy a inference `GET /model/info`: la API toma `version`, `dim` y
-> `embeddingModel` del bloque `meta`, y `macroF1` de `meta.metrics`.
+> `embeddingModel` del bloque `meta`, y `macroF1` de `meta.metrics`
+> (en concreto `embedding_macro_f1_es`).
+
+> **`macroF1` sale del artefacto, no del código.** Cambia con cada
+> reentrenamiento y `version` sigue diciendo `v1` en todos, así que dos
+> artefactos distintos se ven iguales desde aquí. El valor de arriba es el que
+> servía el despliegue el 25/08/2026; ante la duda,
+> `curl https://mindloom.lat/api/model`.
 
 ### `POST /contents/batch` — carga por lotes
 
